@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f2c59">
+<title>FOMO Shield - Mô Hình 3 Lớp Chặn Chi Tiêu Bốc Đồng | HUB Nhóm 01</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Inter', 'sans-serif'] },
+  colors: { hub: { navy: '#0f2c59', dark: '#091b38', red: '#9b1b30', crimson: '#be123c', gold: '#f59e0b' } }
+} } }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+  .gradient-hub { background: linear-gradient(135deg, #0f2c59 0%, #1e3a8a 55%, #9b1b30 100%); }
+  .card-shadow { box-shadow: 0 10px 25px -5px rgba(15,44,89,.08), 0 8px 10px -6px rgba(15,44,89,.04); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  /* Chế độ demo: chỉ hiện các phần demo-only khi bật */
+  body:not(.demo-on) .demo-only { display: none !important; }
+  /* Chế độ học thuật: chỉ hiện trích dẫn khi bật */
+  .acad { display: none; }
+  body.acad-on .acad { display: inline; }
+  input[type=range] { accent-color: #0f2c59; }
+  button:disabled { cursor: not-allowed; }
+</style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+<!-- Toast -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none"></div>
+
+<!-- ===== MODAL: Onboarding ===== -->
+<div id="modal-onboard" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 card-shadow border border-slate-200 max-h-[92vh] overflow-y-auto">
+    <div class="text-center mb-4">
+      <div class="w-14 h-14 mx-auto rounded-2xl gradient-hub text-amber-300 flex items-center justify-center text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3 class="text-xl font-extrabold text-hub-navy mt-3">Chào bạn, thiết lập nhanh 3 con số nhé</h3>
+      <p class="text-sm text-slate-600 mt-1">App bắt đầu trống để bạn dùng với số liệu của chính mình. Dữ liệu chỉ lưu trên thiết bị này.</p>
+    </div>
+    <div class="space-y-3">
+      <label class="block text-sm font-semibold text-slate-700">Hạn mức chi tiêu tự do mỗi tháng (đ)
+        <span class="block text-xs font-normal text-slate-500">Tiền dành cho mua sắm, giải trí, sở thích (không gồm tiền ăn, nhà, học phí).</span>
+        <input id="ob-budget" type="number" min="0" step="10000" value="500000" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-300 text-base font-bold">
+      </label>
+      <label class="block text-sm font-semibold text-slate-700">Tháng này bạn đã chi tự do bao nhiêu rồi (đ)?
+        <span class="block text-xs font-normal text-slate-500">Nhập 0 nếu mới bắt đầu. Các khoản ghi từ giờ sẽ được app cộng thêm.</span>
+        <input id="ob-spent" type="number" min="0" step="10000" value="0" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-300 text-base font-bold">
+      </label>
+      <label class="block text-sm font-semibold text-slate-700">Lương làm thêm mỗi giờ của bạn (đ/giờ)
+        <span class="block text-xs font-normal text-slate-500">Để quy đổi món đồ ra số giờ đi làm. Chưa đi làm thì nhập mức bạn thấy hợp lý.</span>
+        <input id="ob-wage" type="number" min="1000" step="1000" value="25000" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-300 text-base font-bold">
+      </label>
+    </div>
+    <div class="mt-5 flex flex-col sm:flex-row gap-2">
+      <button onclick="obStart()" class="flex-1 bg-hub-navy hover:bg-hub-dark text-white font-extrabold text-sm px-4 py-3 rounded-xl"><i class="fa-solid fa-play mr-1.5"></i>Bắt đầu dùng</button>
+      <button onclick="obDemo()" class="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-sm px-4 py-3 rounded-xl border border-amber-300"><i class="fa-solid fa-headphones mr-1.5"></i>Xem demo của An</button>
+    </div>
+    <p class="text-xs text-slate-500 mt-3 text-center">Chế độ demo dùng dữ liệu giả định và được lưu riêng, không đè lên dữ liệu thật của bạn.</p>
+  </div>
+</div>
+
+<!-- ===== MODAL: Cơ sở lý thuyết ===== -->
+<div id="theory-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-2xl w-full p-6 md:p-8 card-shadow border border-slate-200 max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-start border-b border-slate-200 pb-4 mb-4">
+      <div>
+        <span class="bg-hub-navy text-white text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Tóm tắt học thuật</span>
+        <h3 class="text-xl font-bold text-hub-navy mt-2">Khung phân tích và Mô hình 3 lớp chặn</h3>
+      </div>
+      <button onclick="toggleTheoryModal()" aria-label="Đóng" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+      <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+        <p class="font-bold text-hub-navy mb-1"><i class="fa-solid fa-diagram-project mr-1.5 text-hub-red"></i>Khung phân tích (Chương 1 - Mục 1.4):</p>
+        <p>Kích thích (Flash sale, Livestream, KOLs, Bạn bè) <i class="fa-solid fa-arrow-right mx-1 text-slate-400"></i> Thanh toán (Ví điện tử, BNPL làm giảm "Nỗi đau chi trả") <i class="fa-solid fa-arrow-right mx-1 text-slate-400"></i> Quyết định (Mua bốc đồng) <i class="fa-solid fa-arrow-right mx-1 text-slate-400"></i> Hậu quả tài chính (Thâm hụt sinh hoạt phí, tích tụ nợ ẩn).</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl"><div class="font-bold text-amber-900 mb-1">1. Chặn Kích Thích</div><p class="text-xs text-amber-800">Nhận diện 2 chiều kích FOMO (Przybylski et al., 2013) và hiệu ứng khan hiếm (Truong, 2025). Tắt thông báo, rời livestream để ngắt áp lực thời gian.</p></div>
+        <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl"><div class="font-bold text-rose-900 mb-1">2. Chặn Thanh Toán</div><p class="text-xs text-rose-800">Khôi phục "Nỗi đau chi trả" (Prelec và Loewenstein, 1998). Bóc tách ảo giác chia nhỏ kỳ hạn của BNPL (Ajouz et al., 2024; Kumar và Nayak, 2024).</p></div>
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl"><div class="font-bold text-emerald-900 mb-1">3. Chặn Quyết Định</div><p class="text-xs text-emerald-800">Quy tắc chờ 48 giờ, đối chiếu hạn mức chi tiêu tự do và ghi nhật ký chi tiêu (không cộng trùng nợ BNPL).</p></div>
+      </div>
+      <div class="text-xs text-slate-500 italic bg-slate-100 p-3 rounded-lg">*Lưu ý học thuật (Mục 3.5): Mô hình là khung thực hành giúp sinh viên tạo khoảng dừng nhận thức, không áp dụng máy móc cho các chi tiêu cấp thiết (y tế, học tập). App chưa được kiểm chứng hiệu quả.</div>
+    </div>
+    <div class="mt-6 flex justify-end"><button onclick="toggleTheoryModal()" class="bg-hub-navy hover:bg-hub-dark text-white font-semibold px-5 py-2.5 rounded-xl transition">Đã hiểu</button></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Thêm/Sửa khoản chi (nhật ký) ===== -->
+<div id="modal-entry" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 card-shadow border border-slate-200 max-h-[92vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-3">
+      <h3 id="em-title" class="text-lg font-extrabold text-hub-navy">Thêm khoản chi vào nhật ký</h3>
+      <button onclick="closeEntryModal()" aria-label="Đóng" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">Dùng để nhập lại các khoản đã chi trước đây (kể cả tuần 1 làm mốc) hoặc ghi nhanh chi tiêu thường ngày.</p>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="col-span-2 sm:col-span-1 text-xs font-bold text-slate-700 uppercase">Ngày
+        <input id="em-date" type="date" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case">
+      </label>
+      <label class="col-span-2 sm:col-span-1 text-xs font-bold text-slate-700 uppercase">Loại khoản
+        <select id="em-kind" onchange="emSync()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case bg-white">
+          <option value="unplanned">Chi ngoài kế hoạch (mua sắm, giải trí)</option>
+          <option value="essential">Thiết yếu / trong kế hoạch</option>
+          <option value="cancelled">Đã hủy mua (khoản tránh chi)</option>
+        </select>
+      </label>
+      <label class="col-span-2 text-xs font-bold text-slate-700 uppercase">Món hàng / khoản chi
+        <input id="em-name" maxlength="120" placeholder="Ví dụ: Trà sữa, áo hoodie, ốp lưng..." class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case">
+      </label>
+      <label class="text-xs font-bold text-slate-700 uppercase"><span id="em-total-label">Giá trị đơn (đ)</span>
+        <input id="em-total" type="number" min="0" step="1000" oninput="emPayChange()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal">
+      </label>
+      <label class="text-xs font-bold text-slate-700 uppercase">Phương thức thanh toán
+        <select id="em-pay" onchange="emPayChange()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case bg-white"></select>
+      </label>
+      <label id="em-paid-wrap" class="col-span-2 text-xs font-bold text-slate-700 uppercase hidden">Đã thanh toán ngay (đ)
+        <input id="em-paid" type="number" min="0" step="1000" oninput="this.dataset.touched='1'" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal">
+        <span class="block text-xs font-normal normal-case text-slate-500 mt-0.5">Phần còn lại sẽ được chia đều vào các tháng tiếp theo trong lịch trả BNPL.</span>
+      </label>
+      <label class="col-span-2 text-xs font-bold text-slate-700 uppercase">Lý do muốn mua (không bắt buộc)
+        <input id="em-reason" maxlength="200" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case">
+      </label>
+      <div class="col-span-2">
+        <div class="text-xs font-bold text-slate-700 uppercase mb-1.5">Tác nhân đã gặp (chạm để chọn)</div>
+        <div id="em-chips" class="flex flex-wrap gap-2"></div>
+      </div>
+      <label class="text-sm flex gap-2 items-center"><input type="checkbox" id="em-impulse" class="w-4 h-4">Có thôi thúc muốn mua ngay</label>
+      <label class="text-sm flex gap-2 items-center"><input type="checkbox" id="em-fomo" class="w-4 h-4">Có dấu hiệu FOMO</label>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button onclick="closeEntryModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl">Hủy</button>
+      <button onclick="saveEntry()" class="bg-hub-navy hover:bg-hub-dark text-white font-extrabold text-sm px-5 py-2.5 rounded-xl"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Thêm/Sửa món đóng băng ===== -->
+<div id="modal-frozen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 card-shadow border border-slate-200 max-h-[92vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-3">
+      <h3 id="fm-title" class="text-lg font-extrabold text-hub-navy">Thêm món vào Hộp đóng băng 48h</h3>
+      <button onclick="closeFrozenModal()" aria-label="Đóng" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="col-span-2 text-xs font-bold text-slate-700 uppercase">Món đang cân nhắc
+        <input id="fm-name" maxlength="120" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case">
+      </label>
+      <label class="text-xs font-bold text-slate-700 uppercase">Giá (đ)
+        <input id="fm-price" type="number" min="0" step="1000" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal">
+      </label>
+      <label class="text-xs font-bold text-slate-700 uppercase">Phương thức dự kiến
+        <select id="fm-pay" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case bg-white"></select>
+      </label>
+      <label class="col-span-2 text-xs font-bold text-slate-700 uppercase">Lý do lúc muốn mua
+        <input id="fm-reason" maxlength="200" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case">
+      </label>
+      <div class="col-span-2">
+        <div class="text-xs font-bold text-slate-700 uppercase mb-1.5">Tác nhân (chạm để chọn)</div>
+        <div id="fm-chips" class="flex flex-wrap gap-2"></div>
+      </div>
+      <label class="text-xs font-bold text-slate-700 uppercase">Mức muốn mua lúc này
+        <select id="fm-desire" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case bg-white">
+          <option value="1">1 - Hơi thích</option><option value="2">2</option><option value="3" selected>3 - Khá muốn</option><option value="4">4</option><option value="5">5 - Rất muốn</option>
+        </select>
+      </label>
+      <label id="fm-waited-wrap" class="text-xs font-bold text-slate-700 uppercase">Đã chờ được (giờ)
+        <input id="fm-waited" type="number" min="0" max="47" step="1" value="0" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal">
+      </label>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button onclick="closeFrozenModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl">Hủy</button>
+      <button onclick="saveFrozen()" class="bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl"><i class="fa-solid fa-snowflake mr-1.5"></i>Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Xác nhận ===== -->
+<div id="modal-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 card-shadow border border-slate-200">
+    <h3 id="cf-title" class="text-lg font-extrabold text-hub-navy">Xác nhận</h3>
+    <p id="cf-msg" class="text-sm text-slate-600 mt-2 leading-relaxed"></p>
+    <div class="mt-5 flex justify-end gap-2">
+      <button onclick="closeConfirm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl">Không</button>
+      <button id="cf-ok" onclick="askConfirmOk()" class="bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl">Đồng ý</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="gradient-hub text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex items-start sm:items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 flex flex-col items-center justify-center shrink-0 shadow-inner">
+          <span class="font-extrabold text-lg tracking-tighter leading-none text-white">HUB</span>
+          <span class="text-xs font-semibold text-amber-300 mt-0.5">1976</span>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <span class="bg-amber-400/20 border border-amber-300/40 text-amber-200 text-xs font-semibold px-2.5 py-0.5 rounded-full">Tiểu luận Tài chính cá nhân • Lớp D02 • Nhóm 01</span>
+            <span class="bg-white/15 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">GVHD: Thầy Lê Hoài Ân, CFA</span>
+            <span id="autosave-badge" class="bg-emerald-500/25 border border-emerald-300/50 text-emerald-100 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <i class="fa-solid fa-lock text-emerald-300"></i><span id="autosave-text">Dữ liệu chỉ lưu trên thiết bị của bạn, không thu thập thông tin định danh</span>
+            </span>
+          </div>
+          <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-2"><i class="fa-solid fa-shield-halved text-amber-400"></i>FOMO SHIELD</h1>
+          <p class="text-sm text-blue-100 mt-0.5">Dừng 48 giờ trước khi chi tiền cho thứ bạn chưa chắc cần: FOMO, ví điện tử, Mua trước trả sau (BNPL)</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="btn-acad" onclick="toggleAcad()" class="bg-white/15 hover:bg-white/25 text-white font-semibold text-xs px-3 py-2.5 rounded-xl flex items-center gap-1.5" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i><span>Chế độ học thuật: <b id="acad-state">Tắt</b></span></button>
+        <button onclick="toggleTheoryModal()" class="bg-white/15 hover:bg-white/25 text-white font-semibold text-xs px-3 py-2.5 rounded-xl flex items-center gap-1.5"><i class="fa-solid fa-book"></i>Cơ sở lý thuyết</button>
+        <button id="btn-demo" onclick="toggleDemo()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs px-3 py-2.5 rounded-xl flex items-center gap-1.5"><i class="fa-solid fa-bolt"></i><span id="demo-btn-text">Chế độ demo (thuyết trình)</span></button>
+      </div>
+    </div>
+
+    <nav class="mt-5 flex gap-2 border-b border-white/15 pb-1 overflow-x-auto whitespace-nowrap" aria-label="Điều hướng">
+      <button onclick="switchTab('tab-intro')" id="btn-tab-intro" class="tab-btn bg-white text-hub-navy font-bold text-sm px-4 py-2.5 rounded-t-xl shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-circle-info text-hub-red"></i><span>Giới thiệu</span></button>
+      <button onclick="switchTab('tab-quick')" id="btn-tab-quick" class="tab-btn bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-t-xl flex items-center gap-2 transition"><i class="fa-solid fa-bolt text-amber-300"></i><span>Kiểm tra nhanh</span></button>
+      <button onclick="switchTab('tab-shield')" id="btn-tab-shield" class="tab-btn bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-t-xl flex items-center gap-2 transition"><i class="fa-solid fa-layer-group text-rose-300"></i><span>Trạm 3 lớp (đầy đủ)</span></button>
+      <button onclick="switchTab('tab-vault')" id="btn-tab-vault" class="tab-btn bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-t-xl flex items-center gap-2 transition"><i class="fa-solid fa-snowflake text-sky-300"></i><span>Hộp 48h và Nhật ký</span><span id="badge-freeze-count" class="bg-sky-400 text-slate-950 text-xs font-extrabold px-2 py-0.5 rounded-full">0</span></button>
+      <button onclick="switchTab('tab-plan')" id="btn-tab-plan" class="tab-btn bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-t-xl flex items-center gap-2 transition"><i class="fa-solid fa-chart-column text-emerald-300"></i><span>Theo dõi 4 tuần</span></button>
+      <button onclick="switchTab('tab-settings')" id="btn-tab-settings" class="tab-btn bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-t-xl flex items-center gap-2 transition"><i class="fa-solid fa-gear text-slate-200"></i><span>Cài đặt và Dữ liệu</span></button>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== KPI ===== -->
+<section class="bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div class="w-10 h-10 rounded-lg bg-blue-100 text-hub-navy flex items-center justify-center shrink-0"><i class="fa-solid fa-wallet"></i></div>
+        <div class="min-w-0"><div class="text-xs font-medium text-slate-500">Hạn mức thực còn lại (tháng này)</div><div id="kpi-remaining" class="text-base sm:text-lg font-extrabold text-hub-navy">0 đ</div><div id="kpi-remaining-sub" class="text-xs text-slate-500"></div></div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div class="w-10 h-10 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-icicles"></i></div>
+        <div><div class="text-xs font-medium text-slate-500">Đang đóng băng 48h (dự định)</div><div id="kpi-frozen" class="text-base sm:text-lg font-extrabold text-sky-700">0 đ</div></div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div class="w-10 h-10 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-credit-card"></i></div>
+        <div><div class="text-xs font-medium text-slate-500">Còn nợ trả sau (BNPL)</div><div id="kpi-bnpl" class="text-base sm:text-lg font-extrabold text-rose-700">0 đ</div></div>
+      </div>
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-emerald-50 border border-emerald-200">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-piggy-bank"></i></div>
+        <div><div class="text-xs font-semibold text-emerald-800">Khoản đã tránh chi</div><div id="kpi-saved" class="text-base sm:text-lg font-extrabold text-emerald-700">0 đ</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+  <!-- Banner & công cụ chế độ demo -->
+  <div class="demo-only mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div class="text-sm text-amber-950"><strong><i class="fa-solid fa-bolt mr-1"></i>ĐANG Ở CHẾ ĐỘ DEMO:</strong> toàn bộ là dữ liệu giả định của An, được lưu riêng. Dữ liệu thật của bạn không bị thay đổi.</div>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="loadScenario()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg"><i class="fa-solid fa-headphones mr-1"></i>Nạp tình huống của An (299k)</button>
+        <button onclick="fastForward48h()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-2 rounded-lg"><i class="fa-solid fa-forward mr-1"></i>Tua nhanh 48h</button>
+        <button onclick="simulate4Week()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2 rounded-lg"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Mô phỏng số liệu 4 tuần</button>
+        <button onclick="resetDemo()" class="bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs px-3 py-2 rounded-lg"><i class="fa-solid fa-arrow-rotate-left mr-1"></i>Khôi phục demo ban đầu</button>
+        <button onclick="toggleDemo()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-3 py-2 rounded-lg">Thoát demo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Giới thiệu ===== -->
+  <div id="tab-intro" class="tab-content space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+      <div class="gradient-hub text-white px-6 py-5">
+        <span class="text-xs uppercase tracking-wider bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full">Giới thiệu</span>
+        <h2 class="text-xl sm:text-2xl font-extrabold mt-2"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>FOMO Shield là gì?</h2>
+        <p class="text-sm text-blue-100 mt-1 leading-relaxed max-w-3xl">Công cụ nhỏ giúp bạn tạo một khoảng dừng trước khi chi tiền cho món đồ không thiết yếu. Mỗi lần bị thôi thúc mua, bạn đi qua ba điểm kiểm tra: <strong>chặn kích thích, chặn thanh toán tức thì và chặn quyết định</strong> <span class="acad">(Mô hình 3 lớp chặn, tiểu luận nhóm 01)</span>.</p>
+      </div>
+      <div class="p-6 space-y-6">
+        <div>
+          <h3 class="font-extrabold text-sm text-hub-navy uppercase mb-3">Cách dùng nhanh</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex gap-3 items-start"><span class="w-7 h-7 shrink-0 rounded-full bg-hub-navy text-white font-extrabold text-sm flex items-center justify-center">1</span><p class="text-sm text-slate-700 leading-relaxed"><strong>Thiết lập hạn mức tháng</strong> trong tab "Cài đặt và Dữ liệu" (app sẽ hỏi lần đầu mở).</p></div>
+            <div class="flex gap-3 items-start"><span class="w-7 h-7 shrink-0 rounded-full bg-hub-navy text-white font-extrabold text-sm flex items-center justify-center">2</span><p class="text-sm text-slate-700 leading-relaxed">Khi muốn mua gì đó, mở <strong>Kiểm tra nhanh</strong>: nhập tên món, giá, chạm các tác nhân bạn đang gặp. Chưa tới 20 giây.</p></div>
+            <div class="flex gap-3 items-start"><span class="w-7 h-7 shrink-0 rounded-full bg-hub-navy text-white font-extrabold text-sm flex items-center justify-center">3</span><p class="text-sm text-slate-700 leading-relaxed"><strong>Đóng băng 48 giờ</strong> nếu chỉ là cơn thôi thúc. Đặt nhắc để quay lại quyết định khi cơn sốt đã qua.</p></div>
+            <div class="flex gap-3 items-start"><span class="w-7 h-7 shrink-0 rounded-full bg-hub-navy text-white font-extrabold text-sm flex items-center justify-center">4</span><p class="text-sm text-slate-700 leading-relaxed">Sau 48 giờ chọn <strong>hủy mua</strong> hoặc <strong>vẫn mua</strong>. Theo dõi nhật ký và bảng so sánh 4 tuần để thấy mình thay đổi ra sao.</p></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-bolt mr-1.5 text-amber-500"></i>Kiểm tra nhanh</div><p class="text-xs text-slate-600 leading-relaxed">Phiên bản gọn cho lúc đang xem livestream: ít ô nhập, kết quả hiện ngay.</p></div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-wallet mr-1.5 text-hub-red"></i>Hạn mức thực</div><p class="text-xs text-slate-600 leading-relaxed">Hạn mức tháng trừ khoản đã chi và các kỳ BNPL đến hạn, kèm dự báo tác động lên những tháng tới.</p></div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-pen-to-square mr-1.5 text-hub-red"></i>Tự nhập, sửa, xóa, hoàn tác</div><p class="text-xs text-slate-600 leading-relaxed">Thêm khoản chi cũ, sửa nhầm, xóa dòng sai. Mỗi thao tác lớn đều có nút "Hoàn tác".</p></div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-bell mr-1.5 text-sky-600"></i>Nhắc hết 48 giờ</div><p class="text-xs text-slate-600 leading-relaxed">Thêm vào Google Lịch hoặc tải file .ics để không quên quay lại.</p></div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-chart-column mr-1.5 text-emerald-600"></i>Theo dõi 4 tuần</div><p class="text-xs text-slate-600 leading-relaxed">So tuần 1 với bình quân tuần 2 đến 4, thống kê tác nhân, mức muốn mua trước và sau khi chờ, khảo sát cuối tuần 4.</p></div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-sm text-hub-navy mb-1"><i class="fa-solid fa-file-export mr-1.5 text-slate-600"></i>Sao lưu và xuất file</div><p class="text-xs text-slate-600 leading-relaxed">Sao lưu JSON, xuất nhật ký CSV (mở bằng Excel), xuất bản tóm tắt ẩn danh để nộp cho nhóm.</p></div>
+        </div>
+        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900 leading-relaxed">
+          <strong>Lưu ý:</strong> App là công cụ thực hành do nhóm xây dựng, chưa được kiểm chứng hiệu quả và không thay cho tư vấn tài chính. Khoản chi thiết yếu (học phí, giáo trình, nhà ở, y tế) không bị bắt chờ 48 giờ <span class="acad">(Mục 3.3 và 3.5)</span>. Dữ liệu nằm trong trình duyệt của bạn: hãy sao lưu định kỳ ở tab "Cài đặt và Dữ liệu", nhất là khi mở bằng trình duyệt trong Zalo hoặc Messenger.
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="switchTab('tab-quick')" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm px-5 py-3 rounded-xl shadow flex items-center gap-2"><i class="fa-solid fa-bolt"></i>Kiểm tra nhanh một món</button>
+          <button onclick="toggleDemo()" class="bg-slate-100 hover:bg-slate-200 text-hub-navy font-bold text-sm px-5 py-3 rounded-xl"><i class="fa-solid fa-headphones mr-1"></i>Xem demo của An</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Kiểm tra nhanh ===== -->
+  <div id="tab-quick" class="tab-content hidden">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+      <div class="bg-hub-navy text-white px-5 py-4">
+        <h2 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-bolt text-amber-400"></i>Kiểm tra nhanh trước khi bấm mua</h2>
+        <p class="text-xs sm:text-sm text-blue-100">Điền 3 ô, chạm các tác nhân bạn đang gặp, xem kết quả ngay bên dưới.</p>
+      </div>
+      <div class="p-5 space-y-4">
+        <label class="block text-xs font-bold text-slate-700 uppercase">Món đang muốn mua
+          <input id="q-name" maxlength="120" oninput="evalQuick()" placeholder="Ví dụ: tai nghe, áo khoác, ly giữ nhiệt..." class="mt-1 w-full px-3.5 py-3 rounded-xl border border-slate-300 text-base font-semibold normal-case focus:outline-none focus:ring-2 focus:ring-hub-navy">
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block text-xs font-bold text-slate-700 uppercase">Giá (đ)
+            <input id="q-price" type="number" min="0" step="1000" inputmode="numeric" oninput="evalQuick()" class="mt-1 w-full px-3.5 py-3 rounded-xl border border-slate-300 text-base font-extrabold text-rose-700 normal-case focus:outline-none focus:ring-2 focus:ring-hub-red">
+          </label>
+          <label class="block text-xs font-bold text-slate-700 uppercase">Định trả bằng
+            <select id="q-pay" onchange="evalQuick()" class="mt-1 w-full px-3 py-3 rounded-xl border border-slate-300 text-sm font-semibold normal-case bg-white"></select>
+          </label>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-700 uppercase mb-2">Bạn đang gặp gì? (chạm để chọn)</div>
+          <div id="q-chips" class="flex flex-wrap gap-2"></div>
+        </div>
+        <label class="block text-xs font-bold text-slate-700 uppercase">Mức muốn mua lúc này: <span id="q-desire-out" class="text-hub-red">3 - Khá muốn</span>
+          <input id="q-desire" type="range" min="1" max="5" value="3" oninput="evalQuick()" class="w-full mt-1">
+        </label>
+
+        <div id="q-result" class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+          <div>
+            <div class="flex justify-between items-center text-sm font-bold mb-1.5"><span>Tác nhân đang tác động</span><span id="q-count" class="font-extrabold">0/5</span></div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden"><div id="q-bar" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-300" style="width:0%"></div></div>
+          </div>
+          <div id="q-verdict" class="text-sm leading-relaxed"></div>
+          <div id="q-pain" class="text-sm text-slate-700 leading-relaxed"></div>
+          <div id="q-preview" class="text-sm"></div>
+        </div>
+
+        <div class="space-y-2">
+          <button id="btn-q-freeze" onclick="doFreezeQuick()" class="w-full bg-sky-600 hover:bg-sky-500 disabled:bg-slate-300 text-white font-extrabold text-base py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2"><i class="fa-solid fa-snowflake"></i>Đóng băng 48 giờ</button>
+          <button id="btn-q-buy" onclick="doBuyQuick()" class="w-full bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-600 border border-slate-300 font-semibold text-sm py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-cart-shopping"></i>Vẫn mua luôn (ghi vào nhật ký)</button>
+          <p class="text-xs text-slate-500 text-center">Khoản thiết yếu (học phí, y tế, nhà ở)? Dùng tab "Trạm 3 lớp" và chọn loại B để ghi nhận không cần chờ.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Trạm 3 lớp (đầy đủ) ===== -->
+  <div id="tab-shield" class="tab-content hidden space-y-6">
+    <div id="scenario-banner" class="hidden bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-l-4 border-amber-500 p-4 rounded-r-2xl shadow-sm">
+      <div class="text-xs font-extrabold uppercase tracking-wider text-amber-800">ĐANG MINH HỌA: TÌNH HUỐNG CỦA AN <span class="acad">(Mục 3.1 - Chương 3)</span></div>
+      <p class="text-sm text-slate-700 mt-0.5">An có hạn mức mua sắm <strong>500.000đ/tháng</strong>, đã chi 330.000đ, còn <strong>170.000đ</strong>. Bạn bè trong lớp cùng mua mẫu tai nghe mới, khi xem livestream An gặp chiếc tai nghe <strong>299.000đ</strong> kèm đồng hồ đếm ngược. Tai nghe cũ của An vẫn dùng tốt.</p>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <p class="text-sm text-slate-600">Điền lần lượt 3 lớp. Chỉ cần nhanh? Dùng tab <button onclick="switchTab('tab-quick')" class="underline font-bold text-hub-navy">Kiểm tra nhanh</button>.</p>
+      <button onclick="resetFull()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold text-xs px-3 py-2 rounded-lg"><i class="fa-solid fa-eraser mr-1"></i>Làm mới biểu mẫu</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- LỚP 1 -->
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow flex flex-col overflow-hidden">
+        <div class="bg-hub-navy text-white px-5 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-full bg-amber-400 text-slate-950 font-extrabold text-sm flex items-center justify-center">1</span>
+            <div><h2 class="font-bold text-base leading-tight">LỚP 1: CHẶN KÍCH THÍCH</h2><p class="text-xs text-blue-200">Nhận diện FOMO và áp lực khan hiếm <span class="acad">(Mục 3.2)</span></p></div>
+          </div>
+          <i class="fa-solid fa-tower-broadcast text-amber-400 text-lg"></i>
+        </div>
+        <div class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+          <div class="space-y-4">
+            <label class="block text-xs font-bold text-slate-700 uppercase">Món đồ / khoản chi đang cân nhắc
+              <input id="f-name" maxlength="120" oninput="evalFull()" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold normal-case focus:outline-none focus:ring-2 focus:ring-hub-navy">
+            </label>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <label class="block text-xs font-extrabold text-hub-navy uppercase"><i class="fa-solid fa-filter mr-1 text-hub-red"></i>Tính chất khoản chi <span class="acad">(Mục 3.3 và 3.5)</span>
+                <select id="f-nature" onchange="onFNatureChange()" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-bold bg-white text-slate-800 normal-case">
+                  <option value="non-essential" selected>A. Mua sắm / giải trí / sở thích (không thiết yếu)</option>
+                  <option value="essential">B. Khoản chi cấp thiết (học phí, tiền nhà, giáo trình, y tế)</option>
+                </select>
+              </label>
+              <div id="f-ess-box" class="hidden p-3 rounded-xl bg-emerald-100/90 border border-emerald-400 text-sm text-emerald-950 leading-relaxed space-y-2">
+                <div class="font-extrabold text-emerald-800"><i class="fa-solid fa-graduation-cap mr-1"></i>Khoản thiết yếu không cần chờ 48 giờ <span class="acad">(Mục 3.3 và 3.5)</span></div>
+                <p class="text-xs">Khoản này không trừ vào hạn mức giải trí tự do. Vẫn được ghi vào nhật ký và hiện trong tổng kết để bạn xem lại sau.</p>
+                <label class="flex items-start gap-2 text-xs font-semibold"><input type="checkbox" id="f-ess-confirm" onchange="evalFull()" class="mt-0.5 w-4 h-4"><span>Tôi xác nhận đây là khoản thiết yếu (không phải món muốn mua theo cảm xúc).</span></label>
+              </div>
+            </div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Lý do muốn mua ngay lúc này
+              <input id="f-reason" maxlength="200" oninput="evalFull()" class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm normal-case font-normal focus:outline-none focus:ring-2 focus:ring-hub-navy">
+            </label>
+            <div>
+              <div class="text-xs font-bold text-slate-700 uppercase mb-2">Tác nhân bạn đang gặp <span class="acad">(Chương 1 và 2)</span></div>
+              <div id="f-chips" class="flex flex-wrap gap-2"></div>
+              <p class="text-xs text-slate-500 mt-2 leading-relaxed"><span class="acad">Hai chip đầu thuộc chiều kích FOMO (Przybylski et al., 2013); ba chip sau là ngòi nổ tiếp thị số (Mục 2.1). </span>Đây là tự ghi nhận, không phải thang đo FOMO.</p>
+            </div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Mức muốn mua lúc này: <span id="f-desire-out" class="text-hub-red">3 - Khá muốn</span>
+              <input id="f-desire" type="range" min="1" max="5" value="3" oninput="evalFull()" class="w-full mt-1">
+            </label>
+          </div>
+          <div class="mt-2 pt-3 border-t border-slate-200">
+            <div class="flex justify-between items-center text-xs font-bold mb-1.5"><span>SỐ TÁC NHÂN ĐANG TÁC ĐỘNG</span><span id="f-l1-score" class="font-extrabold">0/5</span></div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden mb-3"><div id="f-l1-bar" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 transition-all duration-300" style="width:0%"></div></div>
+            <div id="f-l1-advice" class="p-3 rounded-xl text-sm leading-relaxed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LỚP 2 -->
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow flex flex-col overflow-hidden">
+        <div class="bg-hub-red text-white px-5 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-full bg-white text-hub-red font-extrabold text-sm flex items-center justify-center">2</span>
+            <div><h2 class="font-bold text-base leading-tight">LỚP 2: CHẶN THANH TOÁN TỨC THÌ</h2><p class="text-xs text-rose-100">Khôi phục "nỗi đau chi trả", bóc tách BNPL <span class="acad">(Mục 3.3)</span></p></div>
+          </div>
+          <i class="fa-solid fa-file-invoice-dollar text-amber-300 text-lg"></i>
+        </div>
+        <div class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+          <div class="space-y-3.5">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm space-y-1">
+              <div class="flex justify-between"><span class="font-semibold text-slate-600">Hạn mức tự do tháng này</span><span id="f-budget" class="font-bold">0 đ</span></div>
+              <div class="flex justify-between"><span class="text-slate-600">− Đã chi</span><span id="f-spent" class="font-semibold">0 đ</span></div>
+              <div class="flex justify-between"><span class="text-slate-600">− Kỳ BNPL đến hạn tháng này</span><span id="f-due" class="font-semibold">0 đ</span></div>
+              <div class="flex justify-between pt-1 border-t border-slate-200"><span class="font-semibold text-slate-700">Hạn mức thực còn lại</span><span id="f-remaining" class="font-extrabold text-hub-navy">0 đ</span></div>
+              <button onclick="switchTab('tab-settings')" class="text-xs text-hub-navy underline font-semibold">Chỉnh hạn mức và số đã chi</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="block text-xs font-bold text-slate-700 uppercase">Giá sau giảm (đ)
+                <input type="number" id="f-price" min="0" oninput="evalFull()" step="1000" inputmode="numeric" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-extrabold text-rose-700 focus:ring-2 focus:ring-hub-red">
+              </label>
+              <label class="block text-xs font-bold text-slate-700 uppercase">Phí ship / phát sinh (đ)
+                <input type="number" id="f-fee" min="0" oninput="evalFull()" step="1000" inputmode="numeric" value="0" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800">
+              </label>
+            </div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Phương thức thanh toán dự kiến
+              <select id="f-pay" onchange="evalFull()" class="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold bg-white normal-case focus:outline-none focus:ring-2 focus:ring-hub-red"></select>
+            </label>
+            <div id="f-bnpl-box" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-300 space-y-2">
+              <div class="flex items-center justify-between"><span class="text-xs font-extrabold text-amber-900 uppercase"><i class="fa-solid fa-eye-slash mr-1"></i>Bóc tách ảo giác BNPL <span class="acad">(Mục 2.2 và 3.3)</span></span><span class="acad text-xs bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">CFPB (2024)</span></div>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="bg-white p-2 rounded-lg border border-amber-200"><div class="text-xs text-slate-500">Mỗi kỳ trông có vẻ:</div><div id="f-bnpl-per" class="font-extrabold text-emerald-600">0 đ</div><div class="text-xs text-slate-400 italic">"nhẹ và vừa túi tiền"</div></div>
+                <div class="bg-rose-50 p-2 rounded-lg border border-rose-200"><div class="text-xs text-rose-700 font-semibold">Tổng nghĩa vụ thực tế:</div><div id="f-bnpl-total" class="font-extrabold text-rose-700">0 đ</div><div class="text-xs text-rose-600">+ rủi ro phí phạt nếu trả chậm</div></div>
+              </div>
+              <div class="text-xs font-bold text-amber-900 pt-1">Các kỳ sẽ chiếm hạn mức thế nào:</div>
+              <div id="f-bnpl-preview"></div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-100 border border-slate-200 space-y-2">
+              <div class="text-xs font-extrabold text-slate-800 uppercase"><i class="fa-solid fa-coins text-amber-500 mr-1"></i>Quy đổi sang đời sống sinh viên <span class="acad">(Prelec và Loewenstein, 1998)</span></div>
+              <p class="text-sm text-slate-600">Khoản chi <strong id="f-pain-total" class="text-rose-700 font-extrabold">0 đ</strong> tương đương:</p>
+              <div class="grid grid-cols-3 gap-2 pt-1">
+                <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs"><div class="text-slate-500 font-medium"><i class="fa-solid fa-money-bill-wave text-emerald-600"></i> Tiền mặt</div><div class="mt-1"><span id="f-pain-notes" class="font-extrabold text-sm text-slate-900">0</span> <span class="font-semibold">tờ 100k</span></div></div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs"><div class="text-slate-500 font-medium"><i class="fa-solid fa-user-clock text-blue-600"></i> Làm thêm</div><div class="mt-1"><span id="f-pain-hours" class="font-extrabold text-sm text-blue-700">0</span> <span class="font-semibold">giờ</span></div><div id="f-pain-wage" class="text-slate-400"></div></div>
+                <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs"><div class="text-slate-500 font-medium"><i class="fa-solid fa-bowl-food text-orange-500"></i> Cơm trưa</div><div class="mt-1"><span id="f-pain-meals" class="font-extrabold text-sm text-orange-600">0</span> <span class="font-semibold">bữa</span></div><div id="f-pain-meal-price" class="text-slate-400"></div></div>
+              </div>
+              <div id="f-pain-prompt" class="text-xs italic text-rose-800 bg-rose-50/80 px-2.5 py-1.5 rounded-lg border border-rose-200/80"></div>
+            </div>
+          </div>
+          <div id="f-verdict-box" class="mt-2 p-3.5 rounded-xl text-white bg-slate-600">
+            <div class="flex items-center justify-between gap-2 font-extrabold text-xs uppercase"><span id="f-verdict-title">Nhập giá để xem</span><span id="f-diff-badge" class="bg-white text-slate-700 px-2 py-0.5 rounded font-black whitespace-nowrap"></span></div>
+            <p id="f-verdict-desc" class="text-sm mt-1.5 leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LỚP 3 -->
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow flex flex-col overflow-hidden">
+        <div class="bg-emerald-700 text-white px-5 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-full bg-amber-300 text-slate-950 font-extrabold text-sm flex items-center justify-center">3</span>
+            <div><h2 class="font-bold text-base leading-tight">LỚP 3: CHẶN QUYẾT ĐỊNH</h2><p class="text-xs text-emerald-100">Quy tắc chờ 48h và phản tư nhu cầu <span class="acad">(Mục 3.4)</span></p></div>
+          </div>
+          <i class="fa-solid fa-scale-balanced text-amber-300 text-lg"></i>
+        </div>
+        <div class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+          <div class="space-y-3.5">
+            <div class="text-xs font-bold text-slate-700 uppercase">Ba câu tự vấn trước khi đặt hàng <span class="acad">(Mục 3.4.1)</span></div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <label class="block text-sm font-semibold text-slate-800" for="f-q1">1. Nếu KHÔNG có khuyến mãi hoặc KHÔNG thấy bạn bè dùng, mình còn muốn mua không?</label>
+              <select id="f-q1" onchange="evalFull()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-semibold bg-white">
+                <option value="">Chọn câu trả lời...</option><option value="no">Không, chủ yếu vì thấy bạn bè có và đang sale</option><option value="yes">Có, vẫn cần dù không ai biết hay không giảm giá</option>
+              </select>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <label class="block text-sm font-semibold text-slate-800" for="f-q2">2. Đồ hiện có đã đáp ứng được nhu cầu chưa?</label>
+              <select id="f-q2" onchange="evalFull()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-semibold bg-white">
+                <option value="">Chọn câu trả lời...</option><option value="good">Đồ đang dùng vẫn tốt (chưa cấp thiết)</option><option value="broken">Chưa có, hoặc đồ cũ đã hỏng hẳn</option>
+              </select>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <label class="block text-sm font-semibold text-slate-800" for="f-q3">3. Mua lúc này có ảnh hưởng đến khoản quan trọng / sinh hoạt phí không?</label>
+              <select id="f-q3" onchange="evalFull()" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-semibold bg-white">
+                <option value="">Chọn câu trả lời...</option><option value="yes">Có ảnh hưởng (vượt hạn mức, lẹm vào tiền ăn, học tập)</option><option value="no">Không, hoàn toàn nằm trong quỹ tự do</option>
+              </select>
+            </div>
+            <div id="f-rec-box" class="p-3.5 rounded-xl border text-sm space-y-1">
+              <div class="font-extrabold uppercase text-xs flex items-center gap-1.5"><i class="fa-solid fa-snowflake text-sky-600"></i><span>GỢI Ý TỪ MÔ HÌNH 3 LỚP CHẶN</span></div>
+              <p id="f-rec-text" class="leading-relaxed"></p>
+            </div>
+          </div>
+          <div class="space-y-2.5 pt-3 border-t border-slate-200">
+            <button id="btn-f-ess" onclick="doEssentialFull()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-md transition items-center justify-center gap-2 flex">
+              <i class="fa-solid fa-bolt-lightning text-amber-300 text-lg"></i>
+              <div class="text-left"><div class="leading-tight">GHI NHẬN KHOẢN THIẾT YẾU (KHÔNG CẦN CHỜ 48H)</div><div class="text-xs font-normal text-emerald-100">Không trừ vào hạn mức tự do. Cần tick xác nhận ở Lớp 1.</div></div>
+            </button>
+            <button id="btn-f-freeze" onclick="doFreezeFull()" class="w-full bg-sky-600 hover:bg-sky-500 disabled:bg-slate-300 text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-snowflake text-lg"></i>
+              <div class="text-left"><div class="leading-tight">ĐƯA VÀO HỘP ĐÓNG BĂNG 48 GIỜ</div><div class="text-xs font-normal text-sky-100">Chỉ là "dự định chi tiêu", chưa trừ tiền thực tế <span class="acad">(Mục 3.4.3)</span></div></div>
+            </button>
+            <button id="btn-f-buy" onclick="doBuyFull()" class="w-full bg-slate-100 hover:bg-amber-50 disabled:opacity-50 text-slate-600 hover:text-amber-800 border border-slate-300 font-semibold text-sm py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-cart-shopping"></i><span>Vẫn mua ngay (ghi vào nhật ký, có thể hoàn tác)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Hộp 48h và Nhật ký ===== -->
+  <div id="tab-vault" class="tab-content hidden space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+      <div class="bg-gradient-to-r from-sky-700 to-hub-navy text-white px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-extrabold flex items-center gap-2"><i class="fa-solid fa-snowflake text-sky-300"></i>HỘP ĐÓNG BĂNG 48 GIỜ <span class="acad text-sm">(Quy tắc chờ, Mục 3.4.1)</span></h2>
+          <p class="text-sm text-sky-100">Các món dưới đây chỉ là <strong>"dự định chi tiêu"</strong>, chưa phải tiền đã chi. Sau 48 giờ, khi cơn sốt qua đi, hãy quyết định hủy hoặc mua.</p>
+        </div>
+        <button onclick="openFrozenModal()" class="bg-white/15 hover:bg-white/25 text-white font-bold text-sm px-4 py-2.5 rounded-xl shrink-0"><i class="fa-solid fa-plus mr-1.5"></i>Thêm món thủ công</button>
+      </div>
+      <div class="p-6"><div id="freeze-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-5 space-y-3">
+        <h2 class="font-extrabold text-sm text-rose-700 uppercase"><i class="fa-solid fa-calendar-days mr-1.5"></i>Lịch trả BNPL các tháng tới</h2>
+        <p class="text-xs text-slate-500">Mỗi kỳ ước tính ~1 tháng. Tick vào ô khi bạn đã trả xong kỳ đó để nghĩa vụ còn lại giảm đi.</p>
+        <div id="bnpl-schedule" class="space-y-3 text-sm max-h-96 overflow-y-auto"></div>
+      </div>
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-5 space-y-3">
+          <h2 class="font-extrabold text-sm text-emerald-700 uppercase"><i class="fa-solid fa-bullseye mr-1.5"></i>Mục tiêu cho khoản tránh chi</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="goal-name" maxlength="60" oninput="onGoalInput()" placeholder="Mục tiêu (vd: học phí, đi chơi Tết)" class="px-3 py-2.5 rounded-lg border border-slate-300 text-sm">
+            <input id="goal-amount" type="number" min="0" step="10000" oninput="onGoalInput()" placeholder="Số tiền cần (đ)" class="px-3 py-2.5 rounded-lg border border-slate-300 text-sm">
+          </div>
+          <div id="goal-progress" class="text-sm text-slate-600"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-5 space-y-2">
+          <h2 class="font-extrabold text-sm text-hub-navy uppercase"><i class="fa-solid fa-calendar mr-1.5 text-hub-red"></i>Tổng kết theo tháng</h2>
+          <div id="monthly-summary" class="text-sm"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+      <div class="bg-hub-navy text-white px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-extrabold flex items-center gap-2"><i class="fa-solid fa-book-open text-amber-400"></i>NHẬT KÝ CHI TIÊU VÀ NGHĨA VỤ TRẢ SAU <span class="acad text-sm">(Mục 3.4.3)</span></h2>
+          <p class="text-sm text-blue-200">Phân biệt: mua ngoài kế hoạch • dấu hiệu mua bốc đồng • dấu hiệu FOMO. Không cộng trùng giá trị đơn với các kỳ BNPL.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="openEntryModal()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"><i class="fa-solid fa-plus"></i>Thêm khoản chi</button>
+          <button onclick="exportJournalCSV()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"><i class="fa-solid fa-file-csv"></i>Xuất CSV (Excel)</button>
+        </div>
+      </div>
+      <div class="p-6 overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[1000px]">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 text-xs font-extrabold uppercase border-b border-slate-200">
+              <th class="py-3 px-3 rounded-tl-xl">Ngày</th><th class="py-3 px-3">Món hàng</th><th class="py-3 px-3 text-right">Giá trị đơn</th><th class="py-3 px-3 text-right">Đã thanh toán</th>
+              <th class="py-3 px-3 text-right text-rose-700">Còn nợ BNPL</th><th class="py-3 px-3">Lý do và tác nhân</th><th class="py-3 px-3">Phân loại hành vi</th><th class="py-3 px-3 text-center">Kết quả</th><th class="py-3 px-3 rounded-tr-xl text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="diary-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Theo dõi 4 tuần ===== -->
+  <div id="tab-plan" class="tab-content hidden space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+      <div class="bg-hub-navy text-white px-6 py-4">
+        <span class="text-xs uppercase tracking-wider bg-amber-400 text-slate-950 font-extrabold px-2.5 py-0.5 rounded-full">Hướng kiểm chứng thực nghiệm <span class="acad">(Mục 3.5)</span></span>
+        <h2 class="text-lg font-extrabold mt-1">KẾ HOẠCH THEO DÕI HÀNH VI CHI TIÊU TỰ NGUYỆN TRONG 4 TUẦN <span class="acad">(Bảng 3.1)</span></h2>
+      </div>
+      <div class="p-6 space-y-6">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse border border-slate-200 text-sm">
+            <thead><tr class="bg-slate-100 text-hub-navy font-extrabold border-b border-slate-200"><th class="p-3.5 w-1/4 border-r border-slate-200">Giai đoạn</th><th class="p-3.5 w-1/3 border-r border-slate-200">Cách tiến hành</th><th class="p-3.5">Thông tin ghi nhận</th></tr></thead>
+            <tbody class="divide-y divide-slate-200 text-slate-700">
+              <tr><td class="p-3.5 font-bold text-rose-700 border-r border-slate-200">Tuần 1 – Mốc ban đầu (Baseline)</td><td class="p-3.5 border-r border-slate-200">Ghi nhận như thường lệ; chưa yêu cầu áp dụng đồng thời ba lớp chặn.</td><td class="p-3.5">Số lần, số tiền mua; khoản ngoài kế hoạch; dấu hiệu muốn mua ngay; tác nhân kích thích và phương thức chi trả.</td></tr>
+              <tr><td class="p-3.5 font-bold text-amber-700 border-r border-slate-200">Tuần 2 - 4 – Thử áp dụng Mô hình 3 lớp chặn</td><td class="p-3.5 border-r border-slate-200">Áp dụng các điểm dừng phù hợp (chặn kích thích, chặn thanh toán, chờ 48h), vẫn ghi theo biểu mẫu tuần 1.</td><td class="p-3.5">Các chỉ tiêu trên; <strong>số lần chờ 48h và quyết định không mua</strong>; mức vượt hạn mức; nghĩa vụ BNPL đến hạn; khó khăn khi áp dụng.</td></tr>
+              <tr class="bg-emerald-50/40"><td class="p-3.5 font-bold text-emerald-800 border-r border-slate-200">Cuối tuần 4 – Đối chiếu và đánh giá</td><td class="p-3.5 border-r border-slate-200">Tổng hợp theo tuần, so sánh mô tả và ghi nhận phản hồi tự nguyện của sinh viên.</td><td class="p-3.5">Chi ngoài kế hoạch bình quân/tuần; số lần có dấu hiệu mua bốc đồng và FOMO tự ghi; mức độ dễ áp dụng.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="font-extrabold text-sm text-hub-navy uppercase"><i class="fa-solid fa-sliders mr-1.5 text-hub-red"></i>Số liệu đối chiếu của bạn</h3>
+              <button onclick="fillFromDiary()" class="bg-hub-navy hover:bg-hub-dark text-white text-xs font-bold px-3 py-2 rounded-lg"><i class="fa-solid fa-table-list mr-1"></i>Lấy số liệu từ nhật ký</button>
+            </div>
+            <p class="text-xs text-slate-500 leading-relaxed">Bạn có thể nhập tay, hoặc bấm nút trên để app tự tổng hợp: tuần 1 tính từ ngày có khoản ghi đầu tiên; tuần 2 đến 4 là bình quân của số tuần đã trôi qua.</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead><tr class="border-b border-slate-300 text-slate-600 font-bold"><th class="py-2 text-left">Chỉ tiêu</th><th class="py-2 text-center text-rose-700">Tuần 1</th><th class="py-2 text-center text-emerald-700">TB tuần 2–4</th></tr></thead>
+                <tbody class="divide-y divide-slate-200">
+                  <tr><td class="py-2.5 font-semibold">1. Chi ngoài kế hoạch / tuần (đ)</td><td class="py-2 text-center"><input type="number" id="w1-spend" min="0" oninput="onPlanInput()" step="10000" class="w-28 text-center font-bold text-rose-700 bg-white border border-slate-300 rounded-lg py-1.5"></td><td class="py-2 text-center"><input type="number" id="w24-spend" min="0" oninput="onPlanInput()" step="10000" class="w-28 text-center font-bold text-emerald-700 bg-white border border-slate-300 rounded-lg py-1.5"></td></tr>
+                  <tr><td class="py-2.5 font-semibold">2. Số lần thôi thúc FOMO / tuần</td><td class="py-2 text-center"><input type="number" id="w1-fomo" min="0" oninput="onPlanInput()" class="w-20 text-center font-bold text-rose-700 bg-white border border-slate-300 rounded-lg py-1.5"></td><td class="py-2 text-center"><input type="number" id="w24-fomo" min="0" oninput="onPlanInput()" class="w-20 text-center font-bold text-emerald-700 bg-white border border-slate-300 rounded-lg py-1.5"></td></tr>
+                  <tr><td class="py-2.5 font-semibold">3. Số đơn hủy sau khi chờ</td><td class="py-2 text-center"><input type="number" id="w1-cancel" min="0" oninput="onPlanInput()" class="w-20 text-center font-bold text-slate-500 bg-white border border-slate-300 rounded-lg py-1.5"></td><td class="py-2 text-center"><input type="number" id="w24-cancel" min="0" oninput="onPlanInput()" class="w-20 text-center font-bold text-sky-700 bg-white border border-slate-300 rounded-lg py-1.5"></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed"><strong>Lưu ý phương pháp:</strong> thiết kế tự ghi nhận 4 tuần nhằm mô tả thay đổi và đánh giá khả năng thực hiện, chưa đủ để kết luận quan hệ nhân quả vì không có nhóm đối chứng <span class="acad">(Mục 3.5)</span>.</div>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4">
+            <h3 class="font-extrabold text-sm text-hub-navy uppercase"><i class="fa-solid fa-chart-simple mr-1.5 text-emerald-600"></i>Biểu đồ so sánh mô tả</h3>
+            <div>
+              <div class="flex justify-between text-sm font-bold mb-1"><span>Chi ngoài kế hoạch bình quân/tuần</span><span id="chart-spend-reduction" class="text-emerald-600 font-extrabold"></span></div>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2"><span class="w-20 text-xs font-semibold text-slate-500">Tuần 1:</span><div class="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden"><div id="bar-w1-spend" class="bg-rose-500 h-full rounded-full text-xs text-white font-bold flex items-center justify-end pr-2 transition-all duration-500" style="width:18%"></div></div></div>
+                <div class="flex items-center gap-2"><span class="w-20 text-xs font-semibold text-slate-500">Tuần 2–4:</span><div class="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden"><div id="bar-w24-spend" class="bg-emerald-500 h-full rounded-full text-xs text-white font-bold flex items-center justify-end pr-2 transition-all duration-500" style="width:18%"></div></div></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-center"><div class="text-xs text-rose-700 font-semibold">Thôi thúc FOMO (tuần 2-4)</div><div id="card-fomo-count" class="text-2xl font-black text-rose-600 mt-0.5">0</div></div>
+              <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 text-center"><div class="text-xs text-sky-800 font-semibold">Đơn hủy sau khi chờ</div><div id="card-cancel-count" class="text-2xl font-black text-sky-600 mt-0.5">0</div></div>
+            </div>
+            <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 acad-block"><span class="acad"><strong>Nghiên cứu tham chiếu:</strong> Nguyễn Ngọc Sang và cs. (2026); Nguyễn Thanh Ý và cs. (2026); Vũ Thị Thương (2026).</span></div>
+          </div>
+        </div>
+
+        <div id="plan-extra" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+
+        <div class="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-3">
+          <h3 class="font-extrabold text-sm text-emerald-900 uppercase"><i class="fa-solid fa-clipboard-question mr-1.5"></i>Khảo sát cuối tuần 4 (tự nguyện)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label class="text-xs font-bold text-slate-700 uppercase">Mức dễ áp dụng mô hình
+              <select id="sv-ease" onchange="onSurveyInput()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-normal normal-case bg-white"><option value="">Chưa chọn</option><option value="1">1 - Rất khó</option><option value="2">2 - Khó</option><option value="3">3 - Bình thường</option><option value="4">4 - Dễ</option><option value="5">5 - Rất dễ</option></select>
+            </label>
+            <label class="text-xs font-bold text-slate-700 uppercase">Khó khăn khi áp dụng
+              <textarea id="sv-hard" rows="2" maxlength="400" oninput="onSurveyInput()" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-normal normal-case"></textarea>
+            </label>
+            <label class="text-xs font-bold text-slate-700 uppercase">Điều giúp ích nhất
+              <textarea id="sv-helpful" rows="2" maxlength="400" oninput="onSurveyInput()" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-normal normal-case"></textarea>
+            </label>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="exportAnonCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-4 py-2.5 rounded-xl"><i class="fa-solid fa-file-csv mr-1.5"></i>Xuất bản tóm tắt ẩn danh (CSV)</button>
+            <label class="text-xs text-slate-700 flex items-center gap-2"><input type="checkbox" id="an-include-text" class="w-4 h-4">Kèm phản hồi bằng chữ ở trên</label>
+          </div>
+          <p class="text-xs text-slate-600">Bản tóm tắt chỉ có các chỉ tiêu tổng hợp, không có tên món hàng hay ngày chi tiêu. Bạn xem file trước khi gửi cho nhóm.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: Cài đặt và Dữ liệu ===== -->
+  <div id="tab-settings" class="tab-content hidden space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-5 space-y-4">
+        <h2 class="font-extrabold text-sm text-hub-navy uppercase"><i class="fa-solid fa-wallet mr-1.5 text-hub-red"></i>Hạn mức và quy đổi</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-xs font-bold text-slate-700 uppercase">Hạn mức tự do / tháng (đ)
+            <input id="set-budget" type="number" min="0" step="10000" oninput="onSettingsInput()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-bold">
+          </label>
+          <label class="text-xs font-bold text-slate-700 uppercase">Đã chi trước khi ghi vào app (đ)
+            <input id="set-base" type="number" min="0" step="10000" oninput="onSettingsInput()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-bold">
+          </label>
+          <label class="text-xs font-bold text-slate-700 uppercase">Lương làm thêm (đ/giờ)
+            <input id="set-wage" type="number" min="1000" step="1000" oninput="onSettingsInput()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-bold">
+          </label>
+          <label class="text-xs font-bold text-slate-700 uppercase">Giá một bữa cơm trưa (đ)
+            <input id="set-meal" type="number" min="1000" step="1000" oninput="onSettingsInput()" class="mt-1 w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm font-bold">
+          </label>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">"Đã chi trước khi ghi vào app" là phần chi tự do bạn nhập tay cho tháng này. Các khoản ghi trong nhật ký được app cộng thêm tự động, nên xóa hoặc sửa nhật ký sẽ tự cập nhật hạn mức. Sang tháng mới, ô này tự về 0.</p>
+        <div id="set-breakdown" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm space-y-1"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 card-shadow p-5 space-y-4">
+        <h2 class="font-extrabold text-sm text-hub-navy uppercase"><i class="fa-solid fa-floppy-disk mr-1.5 text-hub-red"></i>Sao lưu và dữ liệu</h2>
+        <div id="set-mode-note" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5 hidden">Đang ở chế độ demo: các thao tác dưới đây chỉ ảnh hưởng dữ liệu demo.</div>
+        <div id="set-storage-warn" class="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2.5 hidden">Trình duyệt này không cho lưu dữ liệu (chế độ riêng tư hoặc trình duyệt tích hợp trong ứng dụng). Hãy mở bằng Chrome/Safari và xuất sao lưu thường xuyên.</div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportBackup()" class="bg-hub-navy hover:bg-hub-dark text-white font-bold text-sm px-4 py-2.5 rounded-xl"><i class="fa-solid fa-download mr-1.5"></i>Xuất sao lưu (.json)</button>
+          <label class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl cursor-pointer"><i class="fa-solid fa-upload mr-1.5"></i>Nhập sao lưu<input id="set-import-file" type="file" accept="application/json,.json" class="hidden" onchange="importBackup(this)"></label>
+          <button onclick="exportJournalCSV()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm px-4 py-2.5 rounded-xl"><i class="fa-solid fa-file-csv mr-1.5"></i>Xuất nhật ký (CSV)</button>
+        </div>
+        <div class="pt-3 border-t border-slate-200">
+          <button onclick="askDeleteAll()" class="bg-white hover:bg-rose-50 border border-rose-300 text-rose-700 font-bold text-sm px-4 py-2.5 rounded-xl"><i class="fa-solid fa-trash-can mr-1.5"></i>Xóa toàn bộ dữ liệu</button>
+          <p class="text-xs text-slate-500 mt-2">Xóa hết nhật ký, hộp đóng băng, số liệu 4 tuần và khảo sát trên thiết bị này. Nên xuất sao lưu trước.</p>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed"><i class="fa-solid fa-lock mr-1"></i>Mọi dữ liệu nằm trong trình duyệt của bạn. App không gửi dữ liệu đi đâu và không thu thập thông tin định danh <span class="acad">(Mục 3.5)</span>.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="bg-slate-900 text-slate-400 text-xs py-4 mt-8 border-t border-slate-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div><strong class="text-white">Trường Đại học Ngân hàng TP. Hồ Chí Minh (HUB)</strong> • Tiểu luận môn Tài chính cá nhân (Lớp D02 - Nhóm 01)</div>
+    <div>Thành viên: Lê Thị Lệ Thoa • Nguyễn Thị Nhã Thơ • Lê Ngọc Diễm Quỳnh • Nguyễn Thùy Linh Nhi</div>
+  </div>
+</footer>
+
+<script>
+'use strict';
+/* ====================== HẰNG SỐ ====================== */
+const KEY_REAL = 'hub_fomo_shield_group1_state_v3';
+const KEY_DEMO = 'hub_fomo_shield_group1_demo_v3';
+const KEY_UI   = 'hub_fomo_shield_group1_ui_v3';
+const HOUR = 3600000;
+
+const TRIG = {
+  belong:    { label: 'Muốn thuộc về nhóm',    grp: 'fomo', icon: 'fa-people-group' },
+  isolation: { label: 'Sợ bị bỏ lại phía sau', grp: 'fomo', icon: 'fa-user-slash' },
+  scarcity:  { label: 'Flash sale / khan hiếm', grp: 'imp',  icon: 'fa-hourglass-half' },
+  livestream:{ label: 'Livestream chốt đơn',    grp: 'imp',  icon: 'fa-tower-broadcast' },
+  kol:       { label: 'KOL/KOC quảng bá',       grp: 'imp',  icon: 'fa-star' }
+};
+const PAY = {
+  ewallet: { label: 'Ví điện tử (MoMo / ShopeePay / ZaloPay)', short: 'Ví điện tử', periods: 1 },
+  cash:    { label: 'Tiền mặt / thanh toán khi nhận hàng',      short: 'Tiền mặt',   periods: 1 },
+  bnpl3:   { label: 'Mua trước trả sau (BNPL) - chia 3 kỳ',     short: 'BNPL 3 kỳ',  periods: 3 },
+  bnpl6:   { label: 'Mua trước trả sau (BNPL) - chia 6 kỳ',     short: 'BNPL 6 kỳ',  periods: 6 }
+};
+const DESIRE_LABEL = ['', '1 - Hơi thích', '2', '3 - Khá muốn', '4', '5 - Rất muốn'];
+
+/* ====================== TIỆN ÍCH ====================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const numOr = (v, d) => { const n = Number(v); return (v === null || v === '' || v === undefined || !Number.isFinite(n)) ? d : n; };
+const fmt = n => Math.round(num(n)).toLocaleString('vi-VN') + ' đ';
+const pad2 = n => String(n).padStart(2, '0');
+function iso(d) { d = d || new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function parseISO(s) { const p = String(s).split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function fmtDate(s) { return parseISO(s).toLocaleDateString('vi-VN'); }
+function monthKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
+function addMonths(d, k) { return new Date(d.getFullYear(), d.getMonth() + k, 1); }
+function uid(p) { return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function flagsOf(tr) { return { fomo: tr.some(k => TRIG[k] && TRIG[k].grp === 'fomo'), impulse: tr.some(k => TRIG[k] && TRIG[k].grp === 'imp') }; }
+function trigLabels(tr) { return tr.map(k => TRIG[k] ? TRIG[k].label : '').filter(Boolean).join(', '); }
+function cleanTriggers(a) { return Array.isArray(a) ? a.filter(k => TRIG[k]).filter((k, i, arr) => arr.indexOf(k) === i) : []; }
+function desireOrNull(v) { const n = Number(v); return (v !== null && v !== '' && v !== undefined && Number.isInteger(n) && n >= 1 && n <= 5) ? n : null; }
+
+function installments(total, periods) {
+  if (periods <= 1) return [total];
+  const per = Math.round(total / periods), a = [];
+  for (let i = 0; i < periods - 1; i++) a.push(per);
+  a.push(total - per * (periods - 1));
+  return a;
+}
+/* Các kỳ BNPL còn lại của một khoản (không gồm khoản trả ngay) */
+function remInst(e) {
+  if (e.kind === 'cancelled' || e.periods <= 1) return [];
+  const rem = e.totalValue - e.paidNow, n = e.periods - 1;
+  if (rem <= 0 || n <= 0) return [];
+  const per = Math.round(rem / n), d0 = parseISO(e.iso), out = [];
+  for (let k = 1; k <= n; k++) {
+    const amt = k < n ? per : rem - per * (n - 1);
+    out.push({ k: k, amt: amt, due: addMonths(d0, k), paid: !!(e.instPaid && e.instPaid[k - 1]) });
+  }
+  return out;
+}
+const outstanding = e => remInst(e).filter(i => !i.paid).reduce((s, i) => s + i.amt, 0);
+const paidInst = e => remInst(e).filter(i => i.paid).reduce((s, i) => s + i.amt, 0);
+
+/* ====================== TRẠNG THÁI ====================== */
+let mode = 'real';
+let S = null;
+let storageOK = true;
+
+function defaultState() {
+  return { onboarded: false, budgetTotal: 500000, baseSpent: 0, baseMonth: monthKey(new Date()), wage: 25000, meal: 30000,
+    frozen: [], diary: [],
+    w: { w1Spend: null, w24Spend: null, w1Fomo: null, w24Fomo: null, w1Cancel: null, w24Cancel: null },
+    survey: { ease: '', hard: '', helpful: '' }, goal: { name: '', amount: 0 } };
+}
+function normEntry(e) {
+  if (!e || typeof e !== 'object') return null;
+  const kind = ['unplanned', 'essential', 'cancelled'].indexOf(e.kind) >= 0 ? e.kind : 'unplanned';
+  const total = Math.max(0, numOr(e.totalValue, 0));
+  let periods = Math.round(numOr(e.periods, 1)); if (!(periods >= 1 && periods <= 12)) periods = 1;
+  let paid = Math.min(total, Math.max(0, numOr(e.paidNow, total)));
+  if (kind === 'cancelled') { paid = 0; periods = 1; }
+  return {
+    id: /^[A-Za-z0-9_]+$/.test(e.id || '') ? e.id : uid('e'),
+    iso: /^\d{4}-\d{2}-\d{2}$/.test(e.iso || '') ? e.iso : iso(),
+    name: String(e.name || 'Khoản chi').slice(0, 120), totalValue: total, paidNow: paid, periods: periods,
+    payment: PAY[e.payment] ? e.payment : (periods === 3 ? 'bnpl3' : periods === 6 ? 'bnpl6' : 'cash'),
+    kind: kind, src: String(e.src || 'manual').slice(0, 20), reason: String(e.reason || '').slice(0, 200),
+    triggers: cleanTriggers(e.triggers), impulse: !!e.impulse, fomo: !!e.fomo,
+    desireStart: desireOrNull(e.desireStart), desireEnd: desireOrNull(e.desireEnd),
+    waitedH: Math.max(0, Math.round(numOr(e.waitedH, 0))),
+    instPaid: Array.isArray(e.instPaid) ? e.instPaid.slice(0, 11).map(Boolean) : []
+  };
+}
+function normFrozen(f) {
+  if (!f || typeof f !== 'object') return null;
+  const startAt = numOr(f.startAt, Date.now());
+  return {
+    id: /^[A-Za-z0-9_]+$/.test(f.id || '') ? f.id : uid('f'),
+    name: String(f.name || 'Món chưa đặt tên').slice(0, 120), price: Math.max(0, numOr(f.price, 0)),
+    reason: String(f.reason || '').slice(0, 200), payment: PAY[f.payment] ? f.payment : 'ewallet',
+    triggers: cleanTriggers(f.triggers), startAt: startAt, unlockAt: numOr(f.unlockAt, startAt + 48 * HOUR),
+    desireStart: desireOrNull(f.desireStart), desireEnd: desireOrNull(f.desireEnd)
+  };
+}
+function normalizeState(raw) {
+  const s = defaultState();
+  if (!raw || typeof raw !== 'object') return s;
+  s.onboarded = !!raw.onboarded;
+  s.budgetTotal = Math.max(0, numOr(raw.budgetTotal, 500000));
+  s.baseSpent = Math.max(0, numOr(raw.baseSpent, 0));
+  s.baseMonth = /^\d{4}-\d{2}$/.test(raw.baseMonth || '') ? raw.baseMonth : monthKey(new Date());
+  s.wage = Math.max(1000, numOr(raw.wage, 25000));
+  s.meal = Math.max(1000, numOr(raw.meal, 30000));
+  s.frozen = (Array.isArray(raw.frozen) ? raw.frozen : []).map(normFrozen).filter(Boolean);
+  s.diary = (Array.isArray(raw.diary) ? raw.diary : []).map(normEntry).filter(Boolean);
+  const w = raw.w && typeof raw.w === 'object' ? raw.w : {};
+  Object.keys(s.w).forEach(k => { s.w[k] = numOr(w[k], null); });
+  const sv = raw.survey && typeof raw.survey === 'object' ? raw.survey : {};
+  s.survey = { ease: ['1', '2', '3', '4', '5'].indexOf(String(sv.ease)) >= 0 ? String(sv.ease) : '', hard: String(sv.hard || '').slice(0, 400), helpful: String(sv.helpful || '').slice(0, 400) };
+  const g = raw.goal && typeof raw.goal === 'object' ? raw.goal : {};
+  s.goal = { name: String(g.name || '').slice(0, 60), amount: Math.max(0, numOr(g.amount, 0)) };
+  return s;
+}
+function demoState() {
+  const s = defaultState(), t = new Date(), now = Date.now();
+  s.onboarded = true; s.budgetTotal = 500000; s.baseSpent = 130000;
+  const day = off => iso(new Date(t.getFullYear(), t.getMonth(), Math.max(1, t.getDate() - off)));
+  s.frozen = [
+    { id: 'f_demo1', name: 'Áo khoác Local Brand (TikTok Flash Sale 12h đêm)', price: 350000, reason: 'Thấy KOC mặc đẹp, báo chỉ còn 10 chiếc cuối', payment: 'ewallet', triggers: ['kol', 'scarcity'], startAt: now - 12 * HOUR, unlockAt: now + 36 * HOUR, desireStart: 5, desireEnd: null },
+    { id: 'f_demo2', name: 'Ly giữ nhiệt đổi màu theo trend nhóm bạn', price: 100000, reason: 'Cả nhóm bạn thân đều có, sợ đứng ngoài cuộc', payment: 'bnpl3', triggers: ['belong', 'isolation'], startAt: now - 34 * HOUR, unlockAt: now + 14 * HOUR, desireStart: 4, desireEnd: null }
+  ];
+  s.diary = [
+    { id: 'e_demo1', iso: day(15), name: 'Giày sneaker xu hướng mới', totalValue: 600000, paidNow: 200000, periods: 3, payment: 'bnpl3', kind: 'unplanned', src: 'buy-now', reason: 'KOL review lối sống lý tưởng + trả góp 3 kỳ 0%', triggers: ['kol'], impulse: true, fomo: true },
+    { id: 'e_demo2', iso: day(12), name: 'Ốp lưng điện thoại phát sáng trên Livestream', totalValue: 180000, paidNow: 0, periods: 1, payment: 'ewallet', kind: 'cancelled', src: 'freeze-cancel', reason: 'Livestream bình luận chốt đơn dồn dập', triggers: ['livestream', 'scarcity'], impulse: true, fomo: true, desireStart: 4, desireEnd: 1, waitedH: 48 },
+    { id: 'e_demo3', iso: day(11), name: 'Loa mini bluetooth (flash sale)', totalValue: 200000, paidNow: 0, periods: 1, payment: 'bnpl3', kind: 'cancelled', src: 'freeze-cancel', reason: 'Đồng hồ đếm ngược 2 giờ', triggers: ['scarcity', 'belong'], impulse: true, fomo: true, desireStart: 5, desireEnd: 2, waitedH: 48 },
+    { id: 'e_demo4', iso: day(10), name: 'Combo sách giáo trình và tài liệu ôn thi', totalValue: 130000, paidNow: 130000, periods: 1, payment: 'cash', kind: 'essential', src: 'essential', reason: 'Phục vụ học tập trên lớp', triggers: [], impulse: false, fomo: false }
+  ];
+  s.w = { w1Spend: 420000, w24Spend: 140000, w1Fomo: 6, w24Fomo: 3, w1Cancel: 0, w24Cancel: 4 };
+  return normalizeState(s);
+}
+function storageKey() { return mode === 'demo' ? KEY_DEMO : KEY_REAL; }
+function loadState() {
+  let raw = null;
+  try { const t = localStorage.getItem(storageKey()); if (t) raw = JSON.parse(t); } catch (e) { raw = null; }
+  if (raw) return normalizeState(raw);
+  return mode === 'demo' ? demoState() : defaultState();
+}
+function save() {
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify(S));
+    const b = $('autosave-badge'); b.classList.add('ring-2', 'ring-emerald-300'); setTimeout(() => b.classList.remove('ring-2', 'ring-emerald-300'), 400);
+  } catch (e) { storageOK = false; showStorageWarn(); }
+}
+function checkStorage() {
+  try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); storageOK = true; } catch (e) { storageOK = false; }
+  showStorageWarn();
+}
+function showStorageWarn() {
+  $('set-storage-warn').classList.toggle('hidden', storageOK);
+  $('autosave-text').textContent = storageOK ? 'Dữ liệu chỉ lưu trên thiết bị của bạn, không thu thập thông tin định danh' : 'Không lưu được dữ liệu trên trình duyệt này, hãy xuất sao lưu thường xuyên';
+}
+function rolloverMonth() {
+  const mk = monthKey(new Date());
+  if (S.baseMonth !== mk) { const had = S.baseSpent > 0; S.baseSpent = 0; S.baseMonth = mk; save(); if (had) showToast('Sang tháng mới: phần "đã chi trước khi ghi vào app" đã về 0.', 'info'); }
+}
+
+/* Thực hiện thay đổi + lưu + hiển thị lại + nút Hoàn tác */
+function act(mutator, msg, type) {
+  const snap = JSON.stringify(S);
+  mutator();
+  save(); renderAll();
+  const after = JSON.stringify(S);
+  showToast(msg, type || 'success', { label: 'Hoàn tác', fn: () => {
+    if (JSON.stringify(S) !== after) { showToast('Dữ liệu đã thay đổi sau thao tác đó nên không thể hoàn tác tự động.', 'warning'); return; }
+    S = normalizeState(JSON.parse(snap)); save(); renderAll(); showToast('Đã hoàn tác.', 'info');
+  } });
+}
+
+/* ====================== TOAST / CONFIRM ====================== */
+function showToast(message, type, action) {
+  const colors = { info: 'bg-hub-navy border-blue-400 text-white', success: 'bg-emerald-700 border-emerald-400 text-white', warning: 'bg-amber-500 border-amber-300 text-slate-950', danger: 'bg-rose-700 border-rose-400 text-white' };
+  const icons = { info: 'fa-circle-info', success: 'fa-circle-check', warning: 'fa-triangle-exclamation', danger: 'fa-circle-exclamation' };
+  const t = type || 'info', box = $('toast-container'), el = document.createElement('div');
+  el.className = 'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all duration-300 ' + (colors[t] || colors.info);
+  el.setAttribute('role', 'status');
+  const ic = document.createElement('i'); ic.className = 'fa-solid text-lg shrink-0 ' + (icons[t] || icons.info);
+  const tx = document.createElement('div'); tx.className = 'text-sm font-semibold leading-snug flex-1'; tx.textContent = message;
+  el.appendChild(ic); el.appendChild(tx);
+  if (action) {
+    /* chỉ giữ nút Hoàn tác của thao tác gần nhất, tránh bấm nhầm nút cũ */
+    box.querySelectorAll('.undo-toast').forEach(x => x.remove()); el.classList.add('undo-toast');
+    const b = document.createElement('button'); b.className = 'shrink-0 bg-white/20 hover:bg-white/30 font-extrabold text-xs px-3 py-1.5 rounded-lg'; b.textContent = action.label;
+    b.onclick = () => { action.fn(); el.remove(); }; el.appendChild(b);
+  }
+  box.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(10px)'; setTimeout(() => el.remove(), 300); }, action ? 9000 : 4500);
+}
+let confirmFn = null;
+function askConfirm(title, msg, okLabel, fn) {
+  $('cf-title').textContent = title; $('cf-msg').textContent = msg; $('cf-ok').textContent = okLabel || 'Đồng ý'; confirmFn = fn;
+  const m = $('modal-confirm'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeConfirm() { const m = $('modal-confirm'); m.classList.add('hidden'); m.classList.remove('flex'); confirmFn = null; }
+function askConfirmOk() { const f = confirmFn; closeConfirm(); if (f) f(); }
+function openModal(id) { const m = $(id); m.classList.remove('hidden'); m.classList.add('flex'); }
+function closeModal(id) { const m = $(id); m.classList.add('hidden'); m.classList.remove('flex'); }
+function toggleTheoryModal() { const m = $('theory-modal'); if (m.classList.contains('hidden')) openModal('theory-modal'); else closeModal('theory-modal'); }
+
+/* ====================== CHIP TÁC NHÂN ====================== */
+function buildChips(containerId, prefix, onchange) {
+  $(containerId).innerHTML = Object.keys(TRIG).map(k => {
+    const t = TRIG[k];
+    return '<label class="cursor-pointer"><input type="checkbox" id="' + prefix + '-' + k + '" class="peer sr-only" onchange="' + onchange + '">' +
+      '<span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-700 peer-checked:bg-amber-400 peer-checked:border-amber-500 peer-checked:text-slate-950 peer-focus-visible:ring-2 peer-focus-visible:ring-hub-navy transition"><i class="fa-solid ' + t.icon + '"></i>' + t.label + '</span></label>';
+  }).join('');
+}
+const getChips = p => Object.keys(TRIG).filter(k => $(p + '-' + k) && $(p + '-' + k).checked);
+function setChips(p, arr) { Object.keys(TRIG).forEach(k => { const el = $(p + '-' + k); if (el) el.checked = (arr || []).indexOf(k) >= 0; }); }
+function fillPaySelect(id, val) { $(id).innerHTML = Object.keys(PAY).map(k => '<option value="' + k + '">' + PAY[k].label + '</option>').join(''); if (val) $(id).value = val; }
+
+/* ====================== TÍNH TOÁN ====================== */
+function monthCommit(mk) {
+  let c = 0;
+  if (mk === monthKey(new Date())) c += S.baseSpent || 0;
+  S.diary.forEach(e => {
+    if (e.kind !== 'unplanned') return;
+    if (monthKey(parseISO(e.iso)) === mk) c += e.paidNow;
+    remInst(e).forEach(i => { if (monthKey(i.due) === mk) c += i.amt; });
+  });
+  return c;
+}
+function monthStats() {
+  const mk = monthKey(new Date());
+  let spent = S.baseSpent || 0, due = 0;
+  S.diary.forEach(e => {
+    if (e.kind !== 'unplanned') return;
+    if (monthKey(parseISO(e.iso)) === mk) spent += e.paidNow;
+    remInst(e).forEach(i => { if (monthKey(i.due) === mk) due += i.amt; });
+  });
+  return { spent: spent, due: due, real: S.budgetTotal - spent - due };
+}
+function analyze(d) {
+  const total = num(d.price) + num(d.fee), periods = (PAY[d.payment] || PAY.cash).periods, ms = monthStats();
+  const inst = installments(total, periods), now = new Date(), preview = [];
+  for (let k = 0; k < periods; k++) {
+    const due = k === 0 ? new Date(now.getFullYear(), now.getMonth(), 1) : addMonths(now, k), mk = monthKey(due), ex = monthCommit(mk);
+    preview.push({ label: (due.getMonth() + 1) + '/' + due.getFullYear(), amt: inst[k], existing: ex, pct: S.budgetTotal > 0 ? Math.round((ex + inst[k]) / S.budgetTotal * 100) : 0 });
+  }
+  return { total: total, periods: periods, ms: ms, diff: ms.real - total, n: (d.triggers || []).length,
+    notes: total / 100000, hours: total / Math.max(1000, S.wage), meals: total / Math.max(1000, S.meal), inst: inst, preview: preview };
+}
+function previewHTML(a) {
+  if (a.periods <= 1 || a.total <= 0) return '';
+  return '<div class="space-y-1">' + a.preview.map((p, i) =>
+    '<div class="flex justify-between gap-2 text-sm ' + (p.pct > 100 ? 'text-rose-700 font-bold' : 'text-slate-700') + '"><span>' + (i === 0 ? 'Tháng này' : 'Tháng ' + p.label) + ': <strong>+' + fmt(p.amt) + '</strong></span><span class="text-right">≈ ' + p.pct + '% hạn mức</span></div>').join('') + '</div>';
+}
+function levelOf(n) { return n >= 3 ? { t: 'Áp lực cao', c: 'text-rose-600' } : n >= 1 ? { t: 'Trung bình', c: 'text-amber-600' } : { t: 'Ít áp lực', c: 'text-emerald-600' }; }
+
+/* ====================== ĐỌC FORM ====================== */
+function readForm(p) {
+  const g = id => $(p + '-' + id);
+  return { name: g('name').value.trim(), price: num(g('price').value), fee: g('fee') ? num(g('fee').value) : 0, payment: g('pay').value,
+    triggers: getChips(p), reason: g('reason') ? g('reason').value.trim() : '', desire: Math.min(5, Math.max(1, Math.round(num(g('desire').value) || 3))) };
+}
+
+/* ====================== KIỂM TRA NHANH ====================== */
+function evalQuick() {
+  const d = readForm('q'), a = analyze(d), lv = levelOf(a.n);
+  $('q-desire-out').textContent = DESIRE_LABEL[d.desire];
+  $('q-count').textContent = a.n + '/5 • ' + lv.t; $('q-count').className = 'font-extrabold ' + lv.c;
+  $('q-bar').style.width = (a.n * 20) + '%';
+  const has = d.price > 0;
+  $('btn-q-freeze').disabled = !has; $('btn-q-buy').disabled = !has;
+  if (!has) { $('q-verdict').innerHTML = '<span class="text-slate-500">Nhập giá để xem hạn mức còn lại và quy đổi.</span>'; $('q-pain').innerHTML = ''; $('q-preview').innerHTML = ''; return; }
+  let v;
+  if (a.diff < 0) v = '<div class="p-3 rounded-lg bg-amber-100 border border-amber-300 text-amber-950"><strong><i class="fa-solid fa-triangle-exclamation mr-1"></i>Đơn này vượt hạn mức thực còn lại ' + fmt(-a.diff) + '.</strong> Hạn mức thực còn ' + fmt(a.ms.real) + '. Chia nhỏ bằng BNPL không làm món đồ rẻ đi, chỉ dời nghĩa vụ sang các tháng sau.</div>';
+  else v = '<div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950"><strong><i class="fa-solid fa-circle-check mr-1"></i>Nằm trong hạn mức.</strong> Còn dư ' + fmt(a.diff) + ' sau khi mua. Vẫn nên tự hỏi: nếu không có khuyến mãi hay bạn bè dùng, mình còn muốn không?</div>';
+  if (a.n >= 2 || a.diff < 0) v += '<div class="mt-2 font-bold text-sky-800"><i class="fa-solid fa-snowflake mr-1"></i>Gợi ý: đóng băng 48 giờ rồi quyết định lại.</div>';
+  $('q-verdict').innerHTML = v;
+  $('q-pain').innerHTML = '<i class="fa-solid fa-coins text-amber-500 mr-1"></i>Khoản <strong>' + fmt(a.total) + '</strong> = <strong>' + a.notes.toFixed(1) + ' tờ 100k</strong> = <strong>' + a.hours.toFixed(1) + ' giờ làm thêm</strong> = <strong>' + a.meals.toFixed(1) + ' bữa cơm trưa</strong>.';
+  const pv = previewHTML(a);
+  $('q-preview').innerHTML = pv ? '<div class="text-xs font-bold text-amber-900 mb-1">Nếu trả góp, các kỳ chiếm hạn mức:</div>' + pv : '';
+}
+function resetQuick() {
+  ['q-name', 'q-price'].forEach(i => $(i).value = ''); setChips('q', []); $('q-desire').value = 3; $('q-pay').value = 'ewallet'; evalQuick();
+}
+function doFreezeQuick() { doFreeze(readForm('q'), resetQuick); }
+function doBuyQuick() { doBuy(readForm('q'), resetQuick); }
+
+/* ====================== TRẠM 3 LỚP ====================== */
+let fBackup = null;
+function onFNatureChange() {
+  const ess = $('f-nature').value === 'essential';
+  if (ess) {
+    fBackup = { q1: $('f-q1').value, q2: $('f-q2').value, q3: $('f-q3').value, tr: getChips('f') };
+    setChips('f', []); $('f-q1').value = 'yes'; $('f-q2').value = 'broken'; $('f-q3').value = 'no';
+    showToast('Đã chọn khoản thiết yếu: không áp dụng quy tắc chờ 48 giờ.', 'success');
+  } else {
+    const b = fBackup || { q1: '', q2: '', q3: '', tr: [] };
+    $('f-q1').value = b.q1; $('f-q2').value = b.q2; $('f-q3').value = b.q3; setChips('f', b.tr); fBackup = null;
+  }
+  $('f-ess-confirm').checked = false; evalFull();
+}
+function evalFull() {
+  const d = readForm('f'), ess = $('f-nature').value === 'essential', a = analyze(d), lv = levelOf(a.n);
+  $('f-desire-out').textContent = DESIRE_LABEL[d.desire];
+  $('f-ess-box').classList.toggle('hidden', !ess);
+  $('btn-f-ess').classList.toggle('hidden', !ess);
+  $('btn-f-ess').disabled = !($('f-ess-confirm').checked && a.total > 0);
+  $('btn-f-freeze').classList.toggle('opacity-60', ess);
+  $('btn-f-freeze').disabled = a.total <= 0; $('btn-f-buy').disabled = a.total <= 0;
+
+  /* Lớp 1 */
+  const adv = $('f-l1-advice');
+  $('f-l1-bar').style.width = (ess ? 0 : a.n * 20) + '%';
+  if (ess) {
+    $('f-l1-score').textContent = 'KHOẢN CẤP THIẾT'; $('f-l1-score').className = 'font-extrabold text-emerald-700';
+    adv.className = 'p-3 rounded-xl text-sm leading-relaxed bg-emerald-50 border border-emerald-300 text-emerald-950';
+    adv.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i><strong>Giao dịch cấp thiết</strong> (học phí, nhà ở, giáo trình, y tế): không tạo rào cản chờ đợi, chỉ cần kiểm tra số tiền ở Lớp 2.';
+  } else {
+    $('f-l1-score').textContent = a.n + '/5 • ' + lv.t; $('f-l1-score').className = 'font-extrabold ' + lv.c;
+    if (a.n >= 3) { adv.className = 'p-3 rounded-xl text-sm leading-relaxed bg-rose-50 border border-rose-200 text-rose-900'; adv.innerHTML = '<i class="fa-solid fa-hand text-rose-600 mr-1"></i><strong>Gợi ý Lớp 1:</strong> bạn đang chịu nhiều áp lực cùng lúc. Thử <strong>rời livestream</strong> và tắt thông báo vài phút để tách khỏi sức ép thời gian.'; }
+    else if (a.n >= 1) { adv.className = 'p-3 rounded-xl text-sm leading-relaxed bg-amber-50 border border-amber-200 text-amber-900'; adv.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i><strong>Lưu ý Lớp 1:</strong> có tác động từ bên ngoài. Lưu tên món lại, sang Lớp 2 kiểm tra tiền trước khi thanh toán.'; }
+    else { adv.className = 'p-3 rounded-xl text-sm leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-900'; adv.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i><strong>Chưa thấy tác nhân nào.</strong> Nếu bạn chưa chạm chip nào ở trên, hãy xem lại cho chắc rồi qua Lớp 2.'; }
+  }
+
+  /* Lớp 2 */
+  const ms = a.ms;
+  $('f-budget').textContent = fmt(S.budgetTotal); $('f-spent').textContent = fmt(ms.spent); $('f-due').textContent = fmt(ms.due); $('f-remaining').textContent = fmt(ms.real);
+  $('f-remaining').className = 'font-extrabold ' + (ms.real < 0 ? 'text-rose-600' : 'text-hub-navy');
+  const bnpl = a.periods > 1;
+  $('f-bnpl-box').classList.toggle('hidden', !bnpl);
+  if (bnpl) { $('f-bnpl-per').textContent = '~' + fmt(Math.round(a.total / a.periods)) + ' / kỳ (' + a.periods + ' kỳ)'; $('f-bnpl-total').textContent = fmt(a.total); $('f-bnpl-preview').innerHTML = previewHTML(a) || '<span class="text-xs text-slate-500">Nhập giá để xem.</span>'; }
+  $('f-pain-total').textContent = fmt(a.total); $('f-pain-notes').textContent = a.notes.toFixed(1); $('f-pain-hours').textContent = a.hours.toFixed(1); $('f-pain-meals').textContent = a.meals.toFixed(1);
+  $('f-pain-wage').textContent = '@ ' + fmt(S.wage) + '/giờ'; $('f-pain-meal-price').textContent = '(' + fmt(S.meal) + '/suất)';
+  $('f-pain-prompt').innerHTML = '<i class="fa-solid fa-circle-question mr-1"></i>"Nếu bây giờ phải rút <strong>' + a.notes.toFixed(1) + ' tờ 100.000đ tiền giấy</strong> (khoảng <strong>' + a.hours.toFixed(1) + ' giờ làm thêm</strong>) đưa đi ngay, bạn có thấy xót không?"';
+  const vb = $('f-verdict-box'), vt = $('f-verdict-title'), db = $('f-diff-badge'), vd = $('f-verdict-desc');
+  if (a.total <= 0) { vb.className = 'mt-2 p-3.5 rounded-xl text-white bg-slate-600'; vt.textContent = 'Nhập giá để xem'; db.textContent = ''; db.className = 'hidden'; vd.textContent = ''; }
+  else if (ess) { vb.className = 'mt-2 p-3.5 rounded-xl text-white bg-emerald-700'; vt.innerHTML = '<i class="fa-solid fa-graduation-cap mr-1"></i>Khoản cấp thiết'; db.className = 'bg-white text-emerald-800 px-2 py-0.5 rounded font-black whitespace-nowrap'; db.textContent = fmt(a.total); vd.className = 'text-sm mt-1.5 leading-relaxed text-emerald-50'; vd.textContent = 'Khoản này được tính vào quỹ thiết yếu, không trừ vào hạn mức tự do (còn ' + fmt(ms.real) + ').'; }
+  else if (a.diff < 0) { vb.className = 'mt-2 p-3.5 rounded-xl text-white bg-amber-600'; vt.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>Vượt hạn mức thực'; db.className = 'bg-white text-amber-800 px-2 py-0.5 rounded font-black whitespace-nowrap'; db.textContent = '−' + fmt(-a.diff); vd.className = 'text-sm mt-1.5 leading-relaxed text-amber-50'; vd.textContent = 'Tổng đơn ' + fmt(a.total) + ' lớn hơn hạn mức thực còn lại ' + fmt(ms.real) + '. Trả ít hôm nay qua BNPL không làm món đồ phù hợp hơn với ngân sách.'; }
+  else { vb.className = 'mt-2 p-3.5 rounded-xl text-white bg-emerald-700'; vt.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Trong hạn mức'; db.className = 'bg-white text-emerald-800 px-2 py-0.5 rounded font-black whitespace-nowrap'; db.textContent = 'Dư ' + fmt(a.diff); vd.className = 'text-sm mt-1.5 leading-relaxed text-emerald-50'; vd.textContent = 'Tổng đơn ' + fmt(a.total) + ' nằm trong hạn mức thực còn lại ' + fmt(ms.real) + '. Vẫn nên trả lời 3 câu ở Lớp 3.'; }
+
+  /* Lớp 3 */
+  const q1 = $('f-q1').value, q2 = $('f-q2').value, q3 = $('f-q3').value, box = $('f-rec-box'), tx = $('f-rec-text');
+  if (ess) { box.className = 'p-3.5 rounded-xl border text-sm space-y-1 bg-emerald-50 border-emerald-400 text-emerald-950'; tx.innerHTML = 'Giao dịch cấp thiết phục vụ học tập, nhà ở hoặc y tế <strong>không cần chờ 48 giờ</strong>. Tick xác nhận ở Lớp 1 rồi bấm nút xanh lá bên dưới.'; }
+  else if (!q1 || !q2 || !q3) { box.className = 'p-3.5 rounded-xl border text-sm space-y-1 bg-slate-50 border-slate-300 text-slate-700'; tx.innerHTML = 'Trả lời cả 3 câu hỏi để nhận gợi ý.'; }
+  else if (q1 === 'no' || q2 === 'good' || q3 === 'yes' || a.diff < 0) { box.className = 'p-3.5 rounded-xl border text-sm space-y-1 bg-amber-50 border-amber-300 text-amber-950'; tx.innerHTML = 'Có vẻ đây là <strong>mong muốn nhất thời</strong> hơn là nhu cầu cấp thiết (đồ hiện tại vẫn dùng được, phụ thuộc khuyến mãi/bạn bè, hoặc vượt hạn mức). Gợi ý: <strong>đưa vào Hộp đóng băng 48 giờ</strong> để tách cảm xúc khỏi phiên bán hàng.'; }
+  else { box.className = 'p-3.5 rounded-xl border text-sm space-y-1 bg-emerald-50 border-emerald-300 text-emerald-950'; tx.innerHTML = 'Món đồ phục vụ nhu cầu thực tế và nằm trong hạn mức. Bạn có thể mua, hoặc chờ thêm 48 giờ để so sánh giá.'; }
+}
+function resetFull() {
+  ['f-name', 'f-reason', 'f-price'].forEach(i => $(i).value = ''); $('f-fee').value = 0; $('f-nature').value = 'non-essential'; $('f-ess-confirm').checked = false;
+  setChips('f', []); $('f-q1').value = ''; $('f-q2').value = ''; $('f-q3').value = ''; $('f-desire').value = 3; $('f-pay').value = 'ewallet'; fBackup = null;
+  $('scenario-banner').classList.add('hidden'); evalFull();
+}
+function doFreezeFull() { doFreeze(readForm('f'), resetFull); }
+function doBuyFull() { doBuy(readForm('f'), resetFull); }
+function doEssentialFull() {
+  const d = readForm('f');
+  if (!$('f-ess-confirm').checked || d.price + d.fee <= 0) return;
+  const total = d.price + d.fee, periods = PAY[d.payment].periods, name = d.name || 'Khoản chi thiết yếu';
+  act(() => S.diary.unshift(normEntry({ id: uid('e'), iso: iso(), name: name, totalValue: total, paidNow: installments(total, periods)[0], periods: periods, payment: d.payment, kind: 'essential', src: 'essential', reason: d.reason || 'Nhu cầu thiết yếu', triggers: [], impulse: false, fomo: false })),
+    'Đã ghi khoản thiết yếu "' + name + '" (' + fmt(total) + '), không cần chờ 48 giờ và không trừ vào hạn mức tự do.');
+  resetFull(); switchTab('tab-vault');
+}
+
+/* ====================== HÀNH ĐỘNG CHUNG ====================== */
+function doFreeze(d, resetFn) {
+  const total = d.price + d.fee;
+  if (total <= 0) { showToast('Hãy nhập giá lớn hơn 0.', 'warning'); return; }
+  const name = d.name || 'Món chưa đặt tên', now = Date.now();
+  const reason = d.reason || trigLabels(d.triggers) || 'Chưa ghi lý do';
+  act(() => S.frozen.unshift(normFrozen({ id: uid('f'), name: name, price: total, reason: reason, payment: d.payment, triggers: d.triggers, startAt: now, unlockAt: now + 48 * HOUR, desireStart: d.desire })),
+    'Đã đóng băng "' + name + '" (' + fmt(total) + ') trong 48 giờ. Chưa mất đồng nào.');
+  if (resetFn) resetFn(); switchTab('tab-vault');
+}
+function doBuy(d, resetFn) {
+  const total = d.price + d.fee;
+  if (total <= 0) { showToast('Hãy nhập giá lớn hơn 0.', 'warning'); return; }
+  const name = d.name || 'Món hàng vừa mua', periods = PAY[d.payment].periods, f = flagsOf(d.triggers), first = installments(total, periods)[0];
+  act(() => S.diary.unshift(normEntry({ id: uid('e'), iso: iso(), name: name, totalValue: total, paidNow: first, periods: periods, payment: d.payment, kind: 'unplanned', src: 'buy-now',
+    reason: d.reason || trigLabels(d.triggers) || 'Mua ngay không chờ 48h', triggers: d.triggers, impulse: f.impulse, fomo: f.fomo, desireStart: d.desire })),
+    'Đã ghi "' + name + '" vào nhật ký.' + (periods > 1 ? ' Còn nợ BNPL ' + fmt(total - first) + '.' : '') + ' Bấm Hoàn tác nếu bạn bấm nhầm.', 'warning');
+  if (resetFn) resetFn(); switchTab('tab-vault');
+}
+function waitedHours(f) { return Math.max(0, Math.round((Date.now() - f.startAt) / HOUR)); }
+function cancelFrozen(id) {
+  const f = S.frozen.find(x => x.id === id); if (!f) return;
+  const fl = flagsOf(f.triggers);
+  act(() => {
+    S.diary.unshift(normEntry({ id: uid('e'), iso: iso(), name: f.name, totalValue: f.price, paidNow: 0, periods: 1, payment: f.payment, kind: 'cancelled', src: 'freeze-cancel', reason: f.reason, triggers: f.triggers, impulse: fl.impulse, fomo: fl.fomo, desireStart: f.desireStart, desireEnd: f.desireEnd, waitedH: waitedHours(f) }));
+    S.frozen = S.frozen.filter(x => x.id !== id);
+  }, 'Tuyệt vời! Bạn đã hủy "' + f.name + '" và giữ lại ' + fmt(f.price) + '.');
+}
+function buyFrozen(id) {
+  const f = S.frozen.find(x => x.id === id); if (!f) return;
+  if (Date.now() < f.unlockAt) { showToast('Chưa đủ 48 giờ chờ.', 'info'); return; }
+  const periods = PAY[f.payment].periods, fl = flagsOf(f.triggers), first = installments(f.price, periods)[0];
+  act(() => {
+    S.diary.unshift(normEntry({ id: uid('e'), iso: iso(), name: f.name, totalValue: f.price, paidNow: first, periods: periods, payment: f.payment, kind: 'unplanned', src: 'freeze-buy', reason: f.reason, triggers: f.triggers, impulse: fl.impulse, fomo: fl.fomo, desireStart: f.desireStart, desireEnd: f.desireEnd, waitedH: waitedHours(f) }));
+    S.frozen = S.frozen.filter(x => x.id !== id);
+  }, 'Sau 48 giờ bạn vẫn muốn mua "' + f.name + '": đã ghi là quyết định có cân nhắc. Mô hình không cấm mua sắm, chỉ tạo khoảng dừng.');
+}
+function setDesireEnd(id, v) { const f = S.frozen.find(x => x.id === id); if (f) { f.desireEnd = desireOrNull(v); save(); } }
+function askDeleteFrozen(id) {
+  const f = S.frozen.find(x => x.id === id); if (!f) return;
+  askConfirm('Xóa món khỏi hộp đóng băng?', '"' + f.name + '" sẽ bị xóa mà không tính vào khoản đã tránh chi. Chỉ dùng khi bạn nhập nhầm.', 'Xóa', () => act(() => { S.frozen = S.frozen.filter(x => x.id !== id); }, 'Đã xóa "' + f.name + '" khỏi hộp đóng băng.', 'info'));
+}
+function askDeleteEntry(id) {
+  const e = S.diary.find(x => x.id === id); if (!e) return;
+  askConfirm('Xóa dòng nhật ký?', '"' + e.name + '" (' + fmt(e.totalValue) + ') sẽ bị xóa; hạn mức, lịch BNPL và số liệu liên quan tự cập nhật.', 'Xóa', () => act(() => { S.diary = S.diary.filter(x => x.id !== id); }, 'Đã xóa "' + e.name + '" khỏi nhật ký.', 'info'));
+}
+function toggleInst(id, k) {
+  const e = S.diary.find(x => x.id === id); if (!e) return;
+  while (e.instPaid.length < e.periods - 1) e.instPaid.push(false);
+  e.instPaid[k - 1] = !e.instPaid[k - 1]; save(); renderAll();
+}
+function fastForward48h() {
+  if (mode !== 'demo') return;
+  S.frozen.forEach(f => { f.unlockAt = Date.now(); f.startAt = Math.min(f.startAt, Date.now() - 48 * HOUR); });
+  save(); renderVault(); showToast('Đã tua nhanh 48 giờ (chỉ để demo). Bây giờ chọn: vẫn mua hay hủy.', 'info');
+}
+
+/* ====================== NHẮC 48H ====================== */
+function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function icsTime(ms) { return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+function remindGoogle(id) {
+  const f = S.frozen.find(x => x.id === id); if (!f) return;
+  const u = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Hết 48 giờ: quyết định "' + f.name + '"') + '&dates=' + icsTime(f.unlockAt) + '/' + icsTime(f.unlockAt + 15 * 60000) + '&details=' + encodeURIComponent('Còn muốn mua không? Mở FOMO Shield để hủy hoặc mua.');
+  window.open(u, '_blank', 'noopener');
+}
+function remindIcs(id) {
+  const f = S.frozen.find(x => x.id === id); if (!f) return;
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FOMO Shield//VI', 'BEGIN:VEVENT', 'UID:' + f.id + '@fomoshield', 'DTSTAMP:' + icsTime(Date.now()), 'DTSTART:' + icsTime(f.unlockAt), 'DTEND:' + icsTime(f.unlockAt + 15 * 60000),
+    'SUMMARY:' + icsEsc('Hết 48 giờ: quyết định "' + f.name + '"'), 'DESCRIPTION:' + icsEsc('Còn muốn mua không? Mở FOMO Shield để hủy hoặc mua.'), 'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:Het 48 gio', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];
+  download('Nhac-48h.ics', L.join('\r\n'), 'text/calendar;charset=utf-8');
+  showToast('Đã tải file nhắc (.ics). Mở file để thêm vào lịch điện thoại.', 'success');
+}
+
+/* ====================== MODAL THÊM/SỬA NHẬT KÝ ====================== */
+let editingEntryId = null;
+function openEntryModal(id) {
+  editingEntryId = id || null; const e = id ? S.diary.find(x => x.id === id) : null;
+  $('em-title').textContent = e ? 'Sửa khoản chi' : 'Thêm khoản chi vào nhật ký';
+  $('em-date').value = e ? e.iso : iso(); $('em-name').value = e ? e.name : ''; $('em-kind').value = e ? e.kind : 'unplanned';
+  $('em-total').value = e ? e.totalValue : ''; $('em-pay').value = e ? e.payment : 'cash'; $('em-paid').value = e ? e.paidNow : '';
+  $('em-paid').dataset.touched = e ? '1' : '0'; $('em-reason').value = e ? e.reason : ''; setChips('em', e ? e.triggers : []);
+  $('em-impulse').checked = e ? e.impulse : false; $('em-fomo').checked = e ? e.fomo : false;
+  emSync(); openModal('modal-entry'); setTimeout(() => $('em-name').focus(), 50);
+}
+function closeEntryModal() { closeModal('modal-entry'); editingEntryId = null; }
+function emSync() {
+  const kind = $('em-kind').value, periods = PAY[$('em-pay').value].periods;
+  $('em-total-label').textContent = kind === 'cancelled' ? 'Giá món đã không mua (đ)' : 'Giá trị đơn (đ)';
+  $('em-paid-wrap').classList.toggle('hidden', !(kind !== 'cancelled' && periods > 1));
+}
+function emPayChange() {
+  emSync();
+  const p = $('em-paid'), total = num($('em-total').value), periods = PAY[$('em-pay').value].periods;
+  if (periods > 1 && p.dataset.touched !== '1') p.value = total > 0 ? installments(total, periods)[0] : '';
+}
+function syncFlags() { const f = flagsOf(getChips('em')); if (f.fomo) $('em-fomo').checked = true; if (f.impulse) $('em-impulse').checked = true; }
+function saveEntry() {
+  const name = $('em-name').value.trim(), total = num($('em-total').value), kind = $('em-kind').value, pay = $('em-pay').value;
+  let d = $('em-date').value; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) d = iso();
+  if (!name) { showToast('Hãy nhập tên món hàng hoặc khoản chi.', 'warning'); return; }
+  if (!(total > 0)) { showToast('Hãy nhập số tiền lớn hơn 0.', 'warning'); return; }
+  const periods = kind === 'cancelled' ? 1 : PAY[pay].periods;
+  let paid = kind === 'cancelled' ? 0 : (periods > 1 ? num($('em-paid').value) : total);
+  paid = Math.min(total, Math.max(0, paid));
+  const o = { iso: d, name: name, totalValue: total, paidNow: paid, periods: periods, payment: pay, kind: kind, reason: $('em-reason').value.trim(), triggers: getChips('em'), impulse: $('em-impulse').checked, fomo: $('em-fomo').checked };
+  if (editingEntryId) {
+    const id = editingEntryId;
+    act(() => { const e = S.diary.find(x => x.id === id); if (!e) return; const reset = e.periods !== periods || e.paidNow !== paid || e.totalValue !== total || e.iso !== d; Object.assign(e, o); if (reset) e.instPaid = []; Object.assign(e, normEntry(e)); }, 'Đã cập nhật "' + name + '".');
+  } else {
+    act(() => S.diary.unshift(normEntry(Object.assign({ id: uid('e'), src: 'manual' }, o))), 'Đã thêm "' + name + '" (' + fmt(total) + ') vào nhật ký.');
+  }
+  closeEntryModal();
+}
+
+/* ====================== MODAL THÊM/SỬA MÓN ĐÓNG BĂNG ====================== */
+let editingFrozenId = null;
+function openFrozenModal(id) {
+  editingFrozenId = id || null; const f = id ? S.frozen.find(x => x.id === id) : null;
+  $('fm-title').textContent = f ? 'Sửa món đóng băng' : 'Thêm món vào Hộp đóng băng 48h';
+  $('fm-name').value = f ? f.name : ''; $('fm-price').value = f ? f.price : ''; $('fm-pay').value = f ? f.payment : 'ewallet'; $('fm-reason').value = f ? f.reason : '';
+  setChips('fm', f ? f.triggers : []); $('fm-desire').value = f && f.desireStart ? f.desireStart : 3; $('fm-waited').value = 0;
+  $('fm-waited-wrap').classList.toggle('hidden', !!f); openModal('modal-frozen'); setTimeout(() => $('fm-name').focus(), 50);
+}
+function closeFrozenModal() { closeModal('modal-frozen'); editingFrozenId = null; }
+function saveFrozen() {
+  const name = $('fm-name').value.trim(), price = num($('fm-price').value);
+  if (!name) { showToast('Hãy nhập tên món.', 'warning'); return; }
+  if (!(price > 0)) { showToast('Hãy nhập giá lớn hơn 0.', 'warning'); return; }
+  const o = { name: name, price: price, payment: $('fm-pay').value, reason: $('fm-reason').value.trim() || trigLabels(getChips('fm')) || 'Chưa ghi lý do', triggers: getChips('fm'), desireStart: Number($('fm-desire').value) };
+  if (editingFrozenId) {
+    const id = editingFrozenId; act(() => { const f = S.frozen.find(x => x.id === id); if (f) Object.assign(f, o); }, 'Đã cập nhật "' + name + '".');
+  } else {
+    const waited = Math.min(47, Math.max(0, num($('fm-waited').value))), start = Date.now() - waited * HOUR;
+    act(() => S.frozen.unshift(normFrozen(Object.assign({ id: uid('f'), startAt: start, unlockAt: start + 48 * HOUR }, o))), 'Đã thêm "' + name + '" vào hộp đóng băng.');
+  }
+  closeFrozenModal();
+}
+
+/* ====================== HIỂN THỊ ====================== */
+function statusOf(e) {
+  const bn = e.periods > 1 ? ' (BNPL ' + e.periods + ' kỳ)' : '';
+  if (e.kind === 'cancelled') return 'Đã hủy' + (e.waitedH ? ' sau ' + e.waitedH + 'h chờ' : '') + ' (tránh chi ' + fmt(e.totalValue) + ')';
+  if (e.kind === 'essential') return 'Khoản thiết yếu, không chờ 48h' + bn;
+  if (e.src === 'freeze-buy') return 'Mua sau khi chờ 48h' + bn;
+  if (e.src === 'buy-now') return 'Mua ngay, bỏ qua 48h' + bn;
+  return 'Ghi thủ công' + bn;
+}
+function classifyLabel(imp, fomo) { return imp && fomo ? 'Mua bốc đồng + dấu hiệu FOMO' : fomo ? 'Dấu hiệu FOMO (mua ngoài kế hoạch)' : imp ? 'Dấu hiệu mua bốc đồng' : 'Mua ngoài kế hoạch'; }
+function categoryOf(e) {
+  if (e.kind === 'essential') return 'Khoản chi thiết yếu (trong kế hoạch)';
+  return classifyLabel(e.impulse, e.fomo) + (e.kind === 'cancelled' ? ' (đã chặn thành công)' : '');
+}
+const savedTotal = () => S.diary.filter(e => e.kind === 'cancelled').reduce((s, e) => s + e.totalValue, 0);
+
+function renderKPI() {
+  const ms = monthStats();
+  $('kpi-remaining').textContent = fmt(ms.real); $('kpi-remaining').className = 'text-base sm:text-lg font-extrabold ' + (ms.real < 0 ? 'text-rose-600' : 'text-hub-navy');
+  $('kpi-remaining-sub').textContent = 'đã chi ' + fmt(ms.spent) + ' • kỳ BNPL ' + fmt(ms.due);
+  $('kpi-frozen').textContent = fmt(S.frozen.reduce((s, f) => s + f.price, 0));
+  $('kpi-bnpl').textContent = fmt(S.diary.reduce((s, e) => s + outstanding(e), 0));
+  $('kpi-saved').textContent = fmt(savedTotal());
+  $('badge-freeze-count').textContent = S.frozen.length;
+}
+function renderVault() {
+  const list = $('freeze-list');
+  if (!S.frozen.length) list.innerHTML = '<div class="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500"><i class="fa-solid fa-circle-check text-emerald-500 text-2xl mb-2"></i><p class="font-bold text-slate-700">Hộp đóng băng đang trống</p><p class="text-sm mt-1">Khi bị thôi thúc mua, dùng "Kiểm tra nhanh" rồi đóng băng món đó ở đây.</p></div>';
+  else list.innerHTML = S.frozen.map(f => {
+    const opts = '<option value="">Chưa chọn</option>' + [1, 2, 3, 4, 5].map(n => '<option value="' + n + '"' + (f.desireEnd === n ? ' selected' : '') + '>' + DESIRE_LABEL[n] + '</option>').join('');
+    return '<div class="p-4 rounded-2xl bg-sky-50/70 border border-sky-200 flex flex-col justify-between gap-3">' +
+      '<div><div class="flex items-center justify-between gap-2 mb-2"><span class="bg-sky-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full"><i class="fa-regular fa-clock mr-1"></i><span class="cd" data-unlock="' + f.unlockAt + '">...</span></span><span class="text-xs font-bold text-sky-900 bg-sky-200/70 px-2 py-0.5 rounded">Dự định chi tiêu</span></div>' +
+      '<h3 class="font-extrabold text-base text-slate-900 break-words">' + esc(f.name) + '</h3><div class="text-lg font-black text-rose-600 mt-1">' + fmt(f.price) + '</div>' +
+      '<p class="text-sm text-slate-600 mt-1.5"><strong>Lý do:</strong> ' + esc(f.reason) + '</p><p class="text-xs text-slate-500 mt-0.5"><strong>Dự kiến trả bằng:</strong> ' + esc(PAY[f.payment].short) + (f.desireStart ? ' • <strong>Muốn lúc đầu:</strong> ' + DESIRE_LABEL[f.desireStart] : '') + '</p>' +
+      '<label class="block text-xs font-bold text-slate-700 mt-2">Bây giờ bạn còn muốn mua mức nào?<select onchange="setDesireEnd(\'' + f.id + '\',this.value)" class="mt-1 w-full px-2 py-1.5 rounded-lg border border-slate-300 text-sm font-semibold bg-white">' + opts + '</select></label></div>' +
+      '<div><div class="flex gap-2"><button disabled data-unlock="' + f.unlockAt + '" onclick="buyFrozen(\'' + f.id + '\')" class="buy-after flex-1 bg-slate-200 text-slate-500 enabled:bg-sky-600 enabled:hover:bg-sky-500 enabled:text-white font-bold text-sm py-2.5 px-3 rounded-xl" title="Mở sau khi đủ 48 giờ">Vẫn muốn mua</button>' +
+      '<button onclick="cancelFrozen(\'' + f.id + '\')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-2.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-1"><i class="fa-solid fa-circle-xmark"></i>Hết FOMO, hủy</button></div>' +
+      '<div class="flex flex-wrap items-center gap-2 pt-2 mt-2 border-t border-sky-200/80 text-xs"><span class="font-bold text-slate-600"><i class="fa-solid fa-bell mr-1"></i>Nhắc:</span>' +
+      '<button onclick="remindGoogle(\'' + f.id + '\')" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 font-semibold">Google Lịch</button>' +
+      '<button onclick="remindIcs(\'' + f.id + '\')" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 font-semibold">File .ics</button>' +
+      '<span class="flex-1"></span><button onclick="openFrozenModal(\'' + f.id + '\')" aria-label="Sửa" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50"><i class="fa-solid fa-pen"></i></button>' +
+      '<button onclick="askDeleteFrozen(\'' + f.id + '\')" aria-label="Xóa" class="px-2.5 py-1.5 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50"><i class="fa-solid fa-trash-can"></i></button></div></div></div>';
+  }).join('');
+
+  renderBnplSchedule();
+
+  const rows = S.diary.slice().sort((a, b) => a.iso < b.iso ? 1 : a.iso > b.iso ? -1 : 0);
+  $('diary-table-body').innerHTML = rows.length ? rows.map(e => {
+    const out = outstanding(e), cancelled = e.kind === 'cancelled';
+    const badge = cancelled ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : out > 0 ? 'bg-rose-100 text-rose-800 border border-rose-300' : e.kind === 'essential' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-700 border border-slate-200';
+    return '<tr class="hover:bg-slate-50"><td class="py-3 px-3 font-medium text-slate-600 whitespace-nowrap">' + fmtDate(e.iso) + '</td><td class="py-3 px-3 font-bold text-slate-900">' + esc(e.name) + '</td>' +
+      '<td class="py-3 px-3 text-right font-bold whitespace-nowrap">' + fmt(e.totalValue) + '</td><td class="py-3 px-3 text-right font-semibold whitespace-nowrap">' + fmt(e.paidNow + paidInst(e)) + '</td>' +
+      '<td class="py-3 px-3 text-right font-extrabold whitespace-nowrap ' + (out > 0 ? 'text-rose-600' : 'text-slate-400') + '">' + fmt(out) + '</td>' +
+      '<td class="py-3 px-3 text-slate-600 max-w-xs">' + esc(e.reason) + (e.triggers.length ? '<div class="text-xs text-slate-400 mt-0.5">' + esc(trigLabels(e.triggers)) + '</div>' : '') + '</td>' +
+      '<td class="py-3 px-3 font-semibold text-slate-700">' + esc(categoryOf(e)) + '</td>' +
+      '<td class="py-3 px-3 text-center"><span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold ' + badge + '">' + esc(statusOf(e)) + '</span></td>' +
+      '<td class="py-3 px-3 text-center whitespace-nowrap"><button onclick="openEntryModal(\'' + e.id + '\')" aria-label="Sửa" class="w-9 h-9 rounded-lg border border-slate-300 hover:bg-slate-100"><i class="fa-solid fa-pen"></i></button> <button onclick="askDeleteEntry(\'' + e.id + '\')" aria-label="Xóa" class="w-9 h-9 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50"><i class="fa-solid fa-trash-can"></i></button></td></tr>';
+  }).join('') : '<tr><td colspan="9" class="py-8 text-center text-slate-500">Nhật ký đang trống. Bấm "Thêm khoản chi" để nhập chi tiêu của bạn, kể cả những khoản đã chi trước đây.</td></tr>';
+
+  /* mục tiêu */
+  $('goal-name').value = S.goal.name; $('goal-amount').value = S.goal.amount || '';
+  renderGoal();
+  /* tổng kết tháng */
+  const mm = {};
+  S.diary.forEach(e => {
+    if (e.kind === 'essential') return;
+    const k = e.iso.slice(0, 7); const o = mm[k] || (mm[k] = { spend: 0, n: 0, cancel: 0, saved: 0 });
+    if (e.kind === 'cancelled') { o.cancel++; o.saved += e.totalValue; } else { o.spend += e.totalValue; o.n++; }
+  });
+  const ks = Object.keys(mm).sort().reverse();
+  $('monthly-summary').innerHTML = ks.length ? '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-xs text-slate-500 uppercase border-b"><th class="py-1 text-left">Tháng</th><th class="py-1 text-right">Chi ngoài KH</th><th class="py-1 text-right">Số khoản</th><th class="py-1 text-right">Hủy</th><th class="py-1 text-right">Tránh chi</th></tr></thead><tbody>' +
+    ks.map(k => { const o = mm[k], p = k.split('-'); return '<tr class="border-b border-slate-100"><td class="py-1.5 font-semibold">' + p[1] + '/' + p[0] + '</td><td class="py-1.5 text-right">' + fmt(o.spend) + '</td><td class="py-1.5 text-right">' + o.n + '</td><td class="py-1.5 text-right">' + o.cancel + '</td><td class="py-1.5 text-right text-emerald-700 font-bold">' + fmt(o.saved) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+    : '<span class="text-slate-500">Chưa có dữ liệu.</span>';
+  tickCountdowns();
+}
+function renderGoal() {
+  const g = S.goal, saved = savedTotal();
+  if (g.amount > 0) { const pct = Math.min(100, Math.round(saved / g.amount * 100)); $('goal-progress').innerHTML = '<div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden mb-1.5"><div class="h-full bg-emerald-500" style="width:' + pct + '%"></div></div>Đã tránh chi <strong>' + fmt(saved) + '</strong> / ' + fmt(g.amount) + (g.name ? ' cho "<strong>' + esc(g.name) + '</strong>"' : '') + ' (' + pct + '%)'; }
+  else $('goal-progress').innerHTML = 'Đặt mục tiêu để biến tiền tránh chi thành thứ bạn thật sự muốn. Hiện đã tránh chi <strong>' + fmt(saved) + '</strong>.';
+}
+function onGoalInput() { S.goal = { name: $('goal-name').value.trim().slice(0, 60), amount: Math.max(0, num($('goal-amount').value)) }; save(); renderGoal(); }
+
+function renderBnplSchedule() {
+  const el = $('bnpl-schedule'), cur = new Date(), curKey = monthKey(cur), groups = {};
+  S.diary.forEach(e => remInst(e).forEach(i => {
+    if (i.paid && monthKey(i.due) < curKey) return;
+    const k = monthKey(i.due); (groups[k] = groups[k] || { due: i.due, items: [] }).items.push({ e: e, i: i });
+  }));
+  const keys = Object.keys(groups).sort();
+  el.innerHTML = keys.length ? keys.map(k => {
+    const g = groups[k], unpaid = g.items.filter(x => !x.i.paid).reduce((s, x) => s + x.i.amt, 0), pct = S.budgetTotal > 0 ? Math.round(unpaid / S.budgetTotal * 100) : 0, past = k < curKey;
+    return '<div class="rounded-xl border ' + (past ? 'border-amber-300 bg-amber-50' : 'border-rose-200 bg-rose-50') + ' p-3"><div class="flex justify-between items-center mb-1.5"><span class="font-bold">Tháng ' + (g.due.getMonth() + 1) + '/' + g.due.getFullYear() + (past ? ' <span class="text-amber-700 text-xs">(đã qua, tick nếu đã trả)</span>' : '') + '</span><span class="font-extrabold text-rose-700">' + fmt(unpaid) + (S.budgetTotal ? ' <span class="text-xs font-semibold text-slate-500">(≈' + pct + '% hạn mức)</span>' : '') + '</span></div>' +
+      g.items.map(x => '<label class="flex items-center gap-2 py-1 cursor-pointer"><input type="checkbox" class="w-4 h-4" ' + (x.i.paid ? 'checked' : '') + ' onchange="toggleInst(\'' + x.e.id + '\',' + x.i.k + ')"><span class="flex-1 ' + (x.i.paid ? 'line-through text-slate-400' : '') + '">' + esc(x.e.name) + ' <span class="text-xs text-slate-500">(kỳ ' + (x.i.k + 1) + '/' + x.e.periods + ')</span></span><span class="font-semibold">' + fmt(x.i.amt) + '</span></label>').join('') + '</div>';
+  }).join('') : '<div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">Chưa có nghĩa vụ BNPL nào ở các tháng tới.</div>';
+}
+function tickCountdowns() {
+  const now = Date.now();
+  document.querySelectorAll('.cd').forEach(el => {
+    const ms = Number(el.dataset.unlock) - now;
+    if (ms <= 0) { el.textContent = 'Đã đủ 48h - hãy quyết định'; return; }
+    el.textContent = 'Còn ' + [Math.floor(ms / HOUR), Math.floor(ms % HOUR / 60000), Math.floor(ms % 60000 / 1000)].map(pad2).join(':');
+  });
+  document.querySelectorAll('.buy-after').forEach(b => { b.disabled = Number(b.dataset.unlock) > now; });
+}
+
+/* ----- Theo dõi 4 tuần ----- */
+function renderPlan() {
+  const w = S.w, set = (id, v) => { $(id).value = v == null ? '' : v; };
+  set('w1-spend', w.w1Spend); set('w24-spend', w.w24Spend); set('w1-fomo', w.w1Fomo); set('w24-fomo', w.w24Fomo); set('w1-cancel', w.w1Cancel); set('w24-cancel', w.w24Cancel);
+  $('sv-ease').value = S.survey.ease; $('sv-hard').value = S.survey.hard; $('sv-helpful').value = S.survey.helpful;
+  updatePlanChart(); renderPlanExtra();
+}
+function updatePlanChart() {
+  const w = S.w, a = num(w.w1Spend), b = num(w.w24Spend), mx = Math.max(a, b, 1);
+  const wa = $('bar-w1-spend'), wb = $('bar-w24-spend');
+  wa.style.width = Math.max(Math.round(a / mx * 100), 18) + '%'; wa.textContent = fmt(a);
+  wb.style.width = Math.max(Math.round(b / mx * 100), 18) + '%'; wb.textContent = fmt(b);
+  const r = $('chart-spend-reduction');
+  if (a > 0) { const p = ((a - b) / a * 100); r.textContent = p >= 0 ? 'Giảm ' + p.toFixed(1) + '%' : 'Tăng ' + Math.abs(p).toFixed(1) + '%'; r.className = 'font-extrabold ' + (p >= 0 ? 'text-emerald-600' : 'text-rose-600'); }
+  else { r.textContent = 'Chưa đủ số liệu'; r.className = 'font-semibold text-slate-400'; }
+  $('card-fomo-count').textContent = w.w24Fomo == null ? '—' : w.w24Fomo + ' lần/tuần';
+  $('card-cancel-count').textContent = w.w24Cancel == null ? '—' : w.w24Cancel + ' đơn';
+}
+function onPlanInput() {
+  const g = id => { const v = $(id).value; return v === '' ? null : Math.max(0, num(v)); };
+  S.w = { w1Spend: g('w1-spend'), w24Spend: g('w24-spend'), w1Fomo: g('w1-fomo'), w24Fomo: g('w24-fomo'), w1Cancel: g('w1-cancel'), w24Cancel: g('w24-cancel') };
+  save(); updatePlanChart();
+}
+function onSurveyInput() { S.survey = { ease: $('sv-ease').value, hard: $('sv-hard').value.slice(0, 400), helpful: $('sv-helpful').value.slice(0, 400) }; save(); }
+function renderPlanExtra() {
+  const non = S.diary.filter(e => e.kind !== 'essential'), ess = S.diary.filter(e => e.kind === 'essential');
+  const tc = {}, pc = {};
+  non.forEach(e => { e.triggers.forEach(k => tc[k] = (tc[k] || 0) + 1); pc[e.payment] = (pc[e.payment] || 0) + 1; });
+  const bars = (obj, labelFn) => { const ks = Object.keys(obj).sort((a, b) => obj[b] - obj[a]); if (!ks.length) return '<span class="text-sm text-slate-500">Chưa có dữ liệu.</span>'; const mx = obj[ks[0]]; return ks.map(k => '<div class="mb-1.5"><div class="flex justify-between text-sm"><span>' + esc(labelFn(k)) + '</span><b>' + obj[k] + '</b></div><div class="h-2 bg-slate-100 rounded-full"><div class="h-2 rounded-full bg-amber-400" style="width:' + Math.round(obj[k] / mx * 100) + '%"></div></div></div>').join(''); };
+  const ds = S.diary.filter(e => e.desireStart && e.desireEnd);
+  let desire = '<span class="text-sm text-slate-500">Chưa có món nào đã chờ và chọn mức "bây giờ còn muốn".</span>';
+  if (ds.length) { const s0 = ds.reduce((s, e) => s + e.desireStart, 0) / ds.length, s1 = ds.reduce((s, e) => s + e.desireEnd, 0) / ds.length; desire = '<div class="text-sm">Trung bình <b>' + s0.toFixed(1) + '</b> → <b class="' + (s1 < s0 ? 'text-emerald-600' : 'text-rose-600') + '">' + s1.toFixed(1) + '</b> (thang 1 đến 5, ' + ds.length + ' món)</div><div class="text-xs text-slate-500 mt-1">Mô tả tự ghi, không kết luận nhân quả.</div>'; }
+  $('plan-extra').innerHTML =
+    '<div class="p-4 rounded-2xl bg-white border border-slate-200"><h4 class="font-extrabold text-xs uppercase text-hub-navy mb-2">Tác nhân gặp nhiều nhất</h4>' + bars(tc, k => TRIG[k].label) + '</div>' +
+    '<div class="p-4 rounded-2xl bg-white border border-slate-200"><h4 class="font-extrabold text-xs uppercase text-hub-navy mb-2">Phương thức thanh toán</h4>' + bars(pc, k => PAY[k].short) + '</div>' +
+    '<div class="p-4 rounded-2xl bg-white border border-slate-200"><h4 class="font-extrabold text-xs uppercase text-hub-navy mb-2">Mức muốn mua: lúc đầu → sau khi chờ</h4>' + desire +
+    '<div class="mt-3 pt-3 border-t border-slate-100 text-sm"><b>' + ess.length + '</b> khoản đánh dấu thiết yếu (' + fmt(ess.reduce((s, e) => s + e.totalValue, 0)) + '). <span class="text-xs text-slate-500">Xem lại cuối tuần 4 xem có thật sự thiết yếu không.</span></div></div>';
+}
+function fillFromDiary() {
+  if (!S.diary.length) { showToast('Nhật ký chưa có dữ liệu để tổng hợp.', 'info'); return; }
+  const day = 86400000, tm = parseISO(iso()).getTime(), start = Math.min.apply(null, S.diary.map(e => parseISO(e.iso).getTime()));
+  const avail = Math.min(3, Math.max(0, Math.floor((tm - start) / (7 * day))));
+  let s1 = 0, s24 = 0, f1 = 0, f24 = 0, c1 = 0, c24 = 0;
+  S.diary.forEach(e => {
+    const wk = Math.floor((parseISO(e.iso).getTime() - start) / (7 * day)); if (wk > 3 || wk < 0) return;
+    if (e.kind === 'unplanned') { if (wk === 0) s1 += e.totalValue; else s24 += e.totalValue; }
+    if (e.kind !== 'essential' && e.fomo) { if (wk === 0) f1++; else f24++; }
+    if (e.kind === 'cancelled') { if (wk === 0) c1++; else c24++; }
+  });
+  S.w.w1Spend = s1; S.w.w1Fomo = f1; S.w.w1Cancel = c1;
+  if (avail > 0) { S.w.w24Spend = Math.round(s24 / avail); S.w.w24Fomo = Math.round(f24 / avail * 10) / 10; S.w.w24Cancel = Math.round(c24 / avail * 10) / 10; }
+  else { S.w.w24Spend = null; S.w.w24Fomo = null; S.w.w24Cancel = null; }
+  save(); renderPlan();
+  showToast(avail > 0 ? 'Đã tổng hợp: tuần 1 từ ngày ' + fmtDate(iso(new Date(start))) + ', tuần 2-4 là bình quân của ' + avail + ' tuần đã qua. Đây là mô tả tự ghi, không kết luận nhân quả.' : 'Mới có dữ liệu của tuần 1 (từ ' + fmtDate(iso(new Date(start))) + '). Tuần 2-4 sẽ tính được khi đã qua thêm ít nhất 1 tuần.', 'info');
+}
+function simulate4Week() {
+  if (mode !== 'demo') return;
+  S.w = { w1Spend: 450000, w24Spend: 110000, w1Fomo: 7, w24Fomo: 2, w1Cancel: 0, w24Cancel: 5 }; save(); renderPlan();
+  showToast('Đã nạp số liệu mô phỏng (giả định để minh họa, chưa kiểm chứng, không kết luận nhân quả).', 'success');
+}
+
+/* ----- Cài đặt ----- */
+function renderSettings() {
+  $('set-budget').value = S.budgetTotal; $('set-base').value = S.baseSpent; $('set-wage').value = S.wage; $('set-meal').value = S.meal;
+  $('set-mode-note').classList.toggle('hidden', mode !== 'demo'); renderSettingsBreakdown();
+}
+function renderSettingsBreakdown() {
+  const ms = monthStats(), fromDiary = ms.spent - S.baseSpent;
+  $('set-breakdown').innerHTML = '<div class="flex justify-between"><span>Hạn mức tháng</span><b>' + fmt(S.budgetTotal) + '</b></div><div class="flex justify-between"><span>− Đã chi nhập tay</span><b>' + fmt(S.baseSpent) + '</b></div><div class="flex justify-between"><span>− Đã ghi trong nhật ký (tháng này)</span><b>' + fmt(fromDiary) + '</b></div><div class="flex justify-between"><span>− Kỳ BNPL đến hạn tháng này</span><b>' + fmt(ms.due) + '</b></div><div class="flex justify-between pt-1 border-t border-slate-200"><span class="font-bold">Hạn mức thực còn lại</span><b class="' + (ms.real < 0 ? 'text-rose-600' : 'text-hub-navy') + '">' + fmt(ms.real) + '</b></div>';
+}
+function onSettingsInput() {
+  S.budgetTotal = Math.max(0, num($('set-budget').value)); S.baseSpent = Math.max(0, num($('set-base').value));
+  S.wage = Math.max(1000, num($('set-wage').value) || 25000); S.meal = Math.max(1000, num($('set-meal').value) || 30000);
+  S.baseMonth = monthKey(new Date()); save(); renderKPI(); evalFull(); evalQuick(); renderBnplSchedule(); renderSettingsBreakdown();
+}
+
+/* ====================== XUẤT / NHẬP ====================== */
+function download(name, content, type) {
+  const blob = new Blob([content], { type: type }), url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function csvText(v) { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
+function csvNum(v) { return String(Math.round(num(v))); }
+function exportJournalCSV() {
+  const rows = [['Ngày', 'Món hàng / Khoản chi', 'Giá trị đơn (VNĐ)', 'Đã thanh toán, gồm kỳ BNPL đã trả (VNĐ)', 'Nghĩa vụ BNPL còn lại (VNĐ)', 'Lý do', 'Tác nhân', 'Phương thức', 'Phân loại hành vi', 'Kết quả'].map(csvText).join(',')];
+  let frozenTotal = 0;
+  S.frozen.forEach(f => { frozenTotal += f.price; rows.push([csvText('Đang đóng băng 48h'), csvText(f.name), csvNum(f.price), '0', '0', csvText(f.reason), csvText(trigLabels(f.triggers)), csvText(PAY[f.payment].short), csvText('Dự định chi tiêu (chưa phải tiền đã chi)'), csvText('Còn ' + Math.max(0, Math.ceil((f.unlockAt - Date.now()) / HOUR)) + ' giờ chờ')].join(',')); });
+  let paid = 0, out = 0, obligation = 0;
+  S.diary.slice().sort((a, b) => a.iso < b.iso ? 1 : -1).forEach(e => {
+    const o = outstanding(e), p = e.paidNow + paidInst(e);
+    if (e.kind !== 'cancelled') { paid += p; out += o; obligation += e.totalValue; }
+    rows.push([csvText(fmtDate(e.iso)), csvText(e.name), csvNum(e.totalValue), csvNum(p), csvNum(o), csvText(e.reason), csvText(trigLabels(e.triggers)), csvText(PAY[e.payment].short), csvText(categoryOf(e)), csvText(statusOf(e))].join(','));
+  });
+  rows.push('');
+  rows.push([csvText('TỔNG HỢP (không cộng trùng giá trị đơn với các kỳ BNPL)'), '', '', '', '', '', '', '', '', ''].join(','));
+  rows.push([csvText('1. Dự định chi tiêu đang đóng băng (chưa trừ tiền)'), '', csvNum(frozenTotal), '', '', '', '', '', '', ''].join(','));
+  rows.push([csvText('2. Khoản đã tránh chi nhờ hủy sau khi chờ'), '', csvNum(savedTotal()), '', '', '', '', '', '', ''].join(','));
+  rows.push([csvText('3. Tổng đã thanh toán thực tế (gồm kỳ BNPL đã trả)'), '', '', csvNum(paid), '', '', '', '', '', ''].join(','));
+  rows.push([csvText('4. Dư nợ BNPL còn phải trả'), '', '', '', csvNum(out), '', '', '', '', ''].join(','));
+  rows.push([csvText('5. Tổng nghĩa vụ thực tế (= mục 3 + mục 4)'), '', csvNum(obligation), csvNum(paid), csvNum(out), '', '', '', '', ''].join(','));
+  download('Nhat_Ky_Chi_Tieu_FOMO_Shield.csv', '\uFEFF' + rows.join('\r\n'), 'text/csv;charset=utf-8;');
+  showToast('Đã xuất file CSV (mở bằng Excel).', 'success');
+}
+function exportAnonCSV() {
+  const w = S.w, r = [['Chỉ tiêu', 'Tuần 1', 'Bình quân tuần 2-4']];
+  r.push(['Chi ngoài kế hoạch / tuần (VNĐ)', w.w1Spend, w.w24Spend]); r.push(['Số lần thôi thúc FOMO / tuần', w.w1Fomo, w.w24Fomo]); r.push(['Số đơn hủy sau khi chờ', w.w1Cancel, w.w24Cancel]);
+  const ds = S.diary.filter(e => e.desireStart && e.desireEnd);
+  r.push(['Mức muốn mua TB lúc đầu / sau khi chờ (thang 1-5)', ds.length ? (ds.reduce((s, e) => s + e.desireStart, 0) / ds.length).toFixed(2) : '', ds.length ? (ds.reduce((s, e) => s + e.desireEnd, 0) / ds.length).toFixed(2) : '']);
+  r.push(['Số khoản đánh dấu thiết yếu', S.diary.filter(e => e.kind === 'essential').length, '']);
+  r.push(['Mức dễ áp dụng (1-5)', S.survey.ease, '']);
+  if ($('an-include-text').checked) { r.push(['Khó khăn khi áp dụng', S.survey.hard, '']); r.push(['Điều giúp ích nhất', S.survey.helpful, '']); }
+  const csv = r.map(row => row.map((v, i) => (i === 0 || (typeof v === 'string' && v !== '' && isNaN(Number(v)))) ? csvText(v) : csvText(v == null ? '' : v)).join(',')).join('\r\n');
+  download('Tom_tat_an_danh_FOMO_Shield.csv', '\uFEFF' + csv, 'text/csv;charset=utf-8;');
+  showToast('Đã xuất bản tóm tắt ẩn danh. Hãy mở file xem trước khi gửi.', 'success');
+}
+function exportBackup() {
+  download('FOMO-Shield-sao-luu-' + iso() + '.json', JSON.stringify({ app: 'fomo-shield', version: 3, exportedAt: new Date().toISOString(), data: S }, null, 2), 'application/json');
+  showToast('Đã xuất file sao lưu. Hãy cất file ở nơi an toàn.', 'success');
+}
+function importBackup(input) {
+  const file = input.files && input.files[0]; if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const obj = JSON.parse(rd.result), data = obj && obj.data ? obj.data : obj;
+      if (!data || !Array.isArray(data.diary) || !Array.isArray(data.frozen)) throw new Error('bad');
+      const ns = normalizeState(data); ns.onboarded = true;
+      askConfirm('Thay dữ liệu hiện tại?', 'Dữ liệu trong file (' + ns.diary.length + ' dòng nhật ký, ' + ns.frozen.length + ' món đóng băng) sẽ thay thế dữ liệu đang có.', 'Thay thế', () => act(() => { S = ns; }, 'Đã nhập dữ liệu từ file sao lưu.', 'success'));
+    } catch (e) { showToast('File không đúng định dạng sao lưu của FOMO Shield.', 'danger'); }
+    input.value = '';
+  };
+  rd.readAsText(file);
+}
+function askDeleteAll() {
+  askConfirm('Xóa toàn bộ dữ liệu?', 'Nhật ký, hộp đóng băng, số liệu 4 tuần và khảo sát' + (mode === 'demo' ? ' của chế độ demo' : '') + ' sẽ bị xóa khỏi thiết bị này. Bạn vẫn có thể bấm Hoàn tác ngay sau đó.', 'Xóa hết', () => {
+    act(() => { const keep = { b: S.budgetTotal, w: S.wage, m: S.meal }; S = defaultState(); S.onboarded = true; S.budgetTotal = keep.b; S.wage = keep.w; S.meal = keep.m; }, 'Đã xóa toàn bộ dữ liệu (giữ lại hạn mức và mức lương/giờ).', 'info');
+  });
+}
+
+/* ====================== CHẾ ĐỘ / ĐIỀU HƯỚNG ====================== */
+function setAcad(on) { document.body.classList.toggle('acad-on', on); $('acad-state').textContent = on ? 'Bật' : 'Tắt'; $('btn-acad').setAttribute('aria-pressed', on ? 'true' : 'false'); try { localStorage.setItem(KEY_UI, JSON.stringify({ acad: on })); } catch (e) {} }
+function toggleAcad() { setAcad(!document.body.classList.contains('acad-on')); }
+function applyModeUI() { document.body.classList.toggle('demo-on', mode === 'demo'); $('demo-btn-text').textContent = mode === 'demo' ? 'Thoát chế độ demo' : 'Chế độ demo (thuyết trình)'; }
+function toggleDemo() {
+  mode = mode === 'demo' ? 'real' : 'demo'; S = loadState(); applyModeUI();
+  if (mode === 'demo') { setAcad(true); showToast('Đã vào chế độ demo. Dữ liệu thật của bạn được giữ riêng.', 'info'); } else { showToast('Đã quay về dữ liệu thật của bạn.', 'info'); }
+  resetFull(); resetQuick(); rolloverMonth(); renderAll();
+  if (mode === 'real' && !S.onboarded) openModal('modal-onboard');
+}
+function resetDemo() { if (mode !== 'demo') return; S = demoState(); save(); renderAll(); showToast('Đã khôi phục dữ liệu demo ban đầu.', 'info'); }
+function loadScenario() {
+  if (mode !== 'demo') return;
+  switchTab('tab-shield'); $('scenario-banner').classList.remove('hidden');
+  $('f-nature').value = 'non-essential'; $('f-name').value = 'Tai nghe không dây (Livestream)'; $('f-reason').value = 'Bạn bè trong lớp cùng mua, sợ không theo kịp câu chuyện + livestream đếm ngược';
+  setChips('f', ['belong', 'isolation', 'scarcity', 'livestream']); $('f-price').value = 299000; $('f-fee').value = 0; $('f-pay').value = 'bnpl3';
+  $('f-q1').value = 'no'; $('f-q2').value = 'good'; $('f-q3').value = 'yes'; $('f-desire').value = 4; $('f-ess-confirm').checked = false; fBackup = null; evalFull();
+  showToast('Đã nạp tình huống của An: tai nghe 299.000đ, hạn mức còn 170.000đ.', 'info');
+}
+function obStart() {
+  S.budgetTotal = Math.max(0, num($('ob-budget').value)); S.baseSpent = Math.max(0, num($('ob-spent').value)); S.wage = Math.max(1000, num($('ob-wage').value) || 25000);
+  S.baseMonth = monthKey(new Date()); S.onboarded = true; save(); closeModal('modal-onboard'); renderAll(); switchTab('tab-quick');
+  showToast('Xong! Thử "Kiểm tra nhanh" với một món bạn đang muốn mua nhé.', 'success');
+}
+function obDemo() { closeModal('modal-onboard'); toggleDemo(); }
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); $(id).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('bg-white', 'text-hub-navy', 'font-bold', 'shadow-sm'); b.classList.add('bg-white/10', 'text-white', 'font-semibold'); });
+  const ab = $('btn-' + id); if (ab) { ab.classList.remove('bg-white/10', 'text-white', 'font-semibold'); ab.classList.add('bg-white', 'text-hub-navy', 'font-bold', 'shadow-sm'); }
+  if (id === 'tab-plan') renderPlan(); if (id === 'tab-settings') renderSettings(); if (id === 'tab-vault') renderVault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function renderAll() { renderKPI(); renderVault(); renderPlan(); renderSettings(); evalFull(); evalQuick(); }
+
+/* ====================== KHỞI TẠO ====================== */
+window.addEventListener('load', function () {
+  buildChips('f-chips', 'f', 'evalFull()'); buildChips('q-chips', 'q', 'evalQuick()'); buildChips('em-chips', 'em', 'syncFlags()'); buildChips('fm-chips', 'fm', '');
+  ['f-pay', 'q-pay', 'em-pay', 'fm-pay'].forEach(id => fillPaySelect(id, id === 'em-pay' ? 'cash' : 'ewallet'));
+  try { const ui = JSON.parse(localStorage.getItem(KEY_UI) || '{}'); setAcad(!!ui.acad); } catch (e) { setAcad(false); }
+  checkStorage(); mode = 'real'; S = loadState(); applyModeUI(); rolloverMonth(); renderAll(); switchTab('tab-intro');
+  if (!S.onboarded) openModal('modal-onboard');
+  setInterval(tickCountdowns, 1000);
+});
+</script>
+</body>
+</html>
